@@ -1,5 +1,4 @@
 {
-    "auto_repo": 1,
     "server-wide-modules": [
         "web"
     ],
