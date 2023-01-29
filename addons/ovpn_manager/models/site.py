@@ -2,6 +2,7 @@ from odoo import _, api, fields, models, SUPERUSER_ID
 import json
 from odoo.exceptions import UserError, RedirectWarning, ValidationError
 import ipaddress
+from pathlib import Path
 
 
 class OvpnSite(models.Model):
@@ -39,6 +40,7 @@ class OvpnSite(models.Model):
 
     def generate_json(self):
         self.json_content = self._get_json()
+        Path(self.settings_file_path).write_text(self.json_content)
 
     def _get_json(self):
         self.ensure_one()
