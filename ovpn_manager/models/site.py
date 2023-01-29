@@ -9,6 +9,7 @@ class OvpnSite(models.Model):
 
     name = fields.Char("Name")
 
+    json_content = fields.Text("JSON Content")
     remote = fields.Char("Public IP Address of Server", required=True)
     remote_port = fields.Integer("Port of Server", default=1194, required=True)
     net = fields.Char("Network", required=True, default="192.180.0.0/16")
@@ -19,6 +20,9 @@ class OvpnSite(models.Model):
     ssh_config_prefix = fields.Char("SSH Configs prefix", placeholder="hy-")
     group_ids = fields.One2many("ovpn.group", "site_id", string="Groups")
     member_ids = fields.One2many("ovpn.member", "site_id", string="Members")
+    settings_file_path = fields.Char(
+        "Settings File Path", default="/settings.ovpn/settings.json", required=True
+    )
 
     @api.depends("net")
     @api.constrains("net")
@@ -32,6 +36,9 @@ class OvpnSite(models.Model):
             else:
                 rec.netmask = str(network.netmask)
                 rec.netmask_int = int(rec.net.split("/")[1])
+
+    def generate_json(self):
+        self.json_content = self._get_json()
 
     def _get_json(self):
         self.ensure_one()

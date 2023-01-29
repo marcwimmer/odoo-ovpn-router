@@ -13,7 +13,7 @@
 								<field name="name" colspan="4" class="oe_inline" />
 							</h1>
 						</div>
-						<group string="Members" string="member_ids" col="4">
+						<group string="Members" col="2">
 							<field name="member_ids" />
 						</group>
 					</sheet>

@@ -12,7 +12,7 @@
                 'security/ir.model.access.csv'],
     'demo': [],
     'depends': ['base'],
-    'external_dependencies': {'bin': [], 'python': []},
+    'external_dependencies': {'bin': [], 'python': ['jingtrang']},
     'name': 'ovpn_manager',
     'test': [],
     'version': '16.0.1.0'}
