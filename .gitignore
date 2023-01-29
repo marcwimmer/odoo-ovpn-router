@@ -1,0 +1,6 @@
+*.pyc
+__pycache__
+odoo/
+enterprise/
+themes/
+.odoo.ast

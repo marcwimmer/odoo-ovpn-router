@@ -1,0 +1,18 @@
+{
+    "auto_repo": 1,
+    "server-wide-modules": [
+        "web"
+    ],
+    "version": "16.0",
+    "install": [
+        "crm",
+        "ovpn_manager"
+    ],
+    "addons_paths": [
+        "odoo/odoo/addons",
+        "odoo/addons",
+        "enterprise",
+        "themes",
+        "addons",
+    ]
+}
