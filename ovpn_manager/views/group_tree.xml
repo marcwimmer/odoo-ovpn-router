@@ -1,0 +1,15 @@
+<odoo>
+	<data noupdate='0'>
+
+	<record id="view_ovpn_tree_tree" model="ir.ui.view">
+		<field name="model">ovpn.tree</field>
+		<field name="arch" type="xml">
+			<tree default_order="" string="" >
+				<field name="name" />
+				
+			</tree>
+		</field>
+	</record>
+
+	</data>
+</odoo>

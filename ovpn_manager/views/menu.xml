@@ -1,0 +1,13 @@
+<odoo>
+	<data noupdate='0'>
+		<menuitem id="menu_root" label="OVPN"/>
+
+		<record id='ovpn_sites_action' model='ir.actions.act_window'>
+			<field name='name'>Sites</field>
+			<field name='res_model'>ovpn.site</field>
+			<field name='view_mode'>tree,form</field>
+		</record>
+		<menuitem parent="menu_root" id="menu_ovpn_sites" action="ovpn_sites_action"/>
+
+	</data>
+</odoo>
