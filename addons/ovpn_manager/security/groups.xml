@@ -1,0 +1,10 @@
+<odoo>
+	<data noupdate='0'>
+
+		<record id="group_ovpn_manager" model="res.groups">
+			<field name="name">ovpn.manager</field>
+		</record>
+	
+
+	</data>
+</odoo>

@@ -1,0 +1,13 @@
+repos:
+- branch: '16.0'
+  patches:
+  - patches/odoo
+  path: odoo
+  sha: 7edee80545daf29b3a46947838a23e1f4458f12d
+  type: integrated
+  url: https://github.com/odoo/odoo
+- branch: '16.0'
+  path: themes
+  sha: 2d7c8ba5add9e00a9f9b9098ba2fa2a133cd2fb6
+  type: integrated
+  url: git@github.com:odoo/design-themes

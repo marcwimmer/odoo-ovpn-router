@@ -1,0 +1,5 @@
+model_id:id,group_id:id,id,name,perm_read,perm_write,perm_create,perm_unlink
+model_ovpn_site,ovpn_manager.group_ovpn_manager,access_ovpn_site_ovpn_manager,n/a,1,1,1,1
+model_ovpn_member,ovpn_manager.group_ovpn_manager,ovpn_member_ovpn_manager,n/a,1,1,1,1
+model_ovpn_group,ovpn_manager.group_ovpn_manager,ovpn_group_ovpn_manager,n/a,1,1,1,1
+

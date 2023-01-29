@@ -1,0 +1,12 @@
+<odoo>
+	<data>
+        <!--
+		<template id="assets_backend" name="ovpn_manager assets" inherit_id="web.assets_backend">
+			<xpath expr="." position="inside">
+				<script type="text/javascript" src="/ovpn_manager/static/src/js/ovpn_manager.js"></script>
+                <link rel="stylesheet" href="/ovpn_manager/static/src/css/ovpn_manager.css"/>
+			</xpath>
+		</template>
+        -->
+	</data>
+</odoo>

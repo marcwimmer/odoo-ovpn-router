@@ -1,0 +1,61 @@
+<odoo>
+
+    <template id="portal_my_home_ovpn" name="Ovpn" inherit_id="portal.portal_my_home" customize_show="True" priority="40">
+        <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
+            <t t-call="portal.portal_docs_entry">
+                <t t-set="title">Vpn Certificates</t>
+                <t t-set="url" t-value="'/my/vpn'"/>
+                <t t-set="placeholder_count" t-value="'vpn_count'"/>
+            </t>
+        </xpath>
+    </template>
+
+    <template id="portal_my_vpn" name="My Vpn">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True"/>
+            <t t-call="portal.portal_searchbar">
+                <t t-set="title">Vpn Certificates</t>
+            </t>
+            <t t-if="not vpns">
+                <p>There are currently no vpn certificates for your account.</p>
+            </t>
+            <t t-if="vpns" t-call="portal.portal_table">
+                <thead>
+                    <tr class="active">
+                        <th>Name</th>
+                        <th>Partner</th>
+                        <th>Site</th>
+                        <th>IP Address</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <t t-foreach="vpns" t-as="vpn">
+                        <tr>
+                            <td>
+                                <t t-esc="vpn.name"/>
+                            </td>
+                            <td>
+                                <t t-esc="vpn.partner_id.name"/>
+                            </td>
+                            <td>
+                                <t t-esc="vpn.site_id.name"/>
+                            </td>
+                            <td>
+                                <t t-esc="vpn.ip_address"/>
+                            </td>
+                            <td>
+                                <td class="text-center">
+                                    <a t-attf-href="#{vpn.download_vpn_link}" title="Download" aria-label="Download" class="btn btn-sm btn-primary" role="button">
+                                        <i class="fa fa fa-download"/>
+                                        <span class='d-none d-md-inline'> Download</span>
+                                    </a>
+                                </td>
+                            </td>
+                        </tr>
+                    </t>
+                </tbody>
+            </t>
+        </t>
+    </template>
+
+</odoo>

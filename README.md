@@ -1,0 +1,1 @@
+# ovpn-router configuration
