@@ -18,7 +18,7 @@
 						</div>
 						<notebook>
 							<page string="Members">
-								<field name="member_ids"/>
+								<field name="member_ids" nolabel="1"/>
 							</page>
 							<page string="Details">
 								<group>
@@ -34,7 +34,7 @@
 								</group>
 							</page>
 							<page string="Groups">
-								<field name="group_ids">
+								<field name="group_ids" nolabel="1">
 
 								</field>
 							</page>

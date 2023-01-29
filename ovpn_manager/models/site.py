@@ -52,8 +52,8 @@ class OvpnSite(models.Model):
             "tun0_local": self.tun0_local,
             "tun0_peer": self.tun0_peer,
             "netmask": self.netmask,
-            "netmaskint": self.netmask_int,
-            "net": self.net,
+            "netmaskint": str(self.netmask_int),
+            "net": self.net.split("/")[0],
             "remote_port": self.remote_port,
             "remote": self.remote,
             "custom_routes": (self.group_ids._get_json()),
@@ -64,3 +64,15 @@ class OvpnSite(models.Model):
             "ccdroutes": {"master": []},
         }
         return json.dumps(res, indent=4)
+
+    def match_ip(self, ip):
+        network = ipaddress.IPv4Network(self.net)
+        if ip not in network:
+            raise ValidationError(
+                _("IP Address %s is not in network %s") % (ip, network)
+            )
+
+    @api.constrains("net")
+    def _check_members(self):
+        for member in self.member_ids:
+            member._check_ip()

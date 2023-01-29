@@ -24,9 +24,14 @@ class OvpnMember(models.Model):
     @api.constrains("ip_address")
     def _check_ip(self):
         for rec in self:
-            add = (rec.ip_address or "").strip()
-            if add != rec.ip_address:
-                rec.ip_address = add
+            ip = (rec.ip_address or "").strip()
+            try:
+                ip = ipaddress.IPv4Address(ip)
+            except Exception as ex:                
+                raise ValidationError(str(ex)) from ex
+            rec.site_id.match_ip(ip)
+            if str(ip) != rec.ip_address:
+                rec.ip_address = str(ip)
 
     def _get_json(self):
         res = {}
