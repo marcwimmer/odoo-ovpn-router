@@ -1,3 +1,6 @@
 *.pyc
 __pycache__
 .odoo.ast
+
+.idea
+.vscode

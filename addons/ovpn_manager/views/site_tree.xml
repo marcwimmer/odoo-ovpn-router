@@ -5,8 +5,7 @@
 		<field name="model">ovpn.site</field>
 		<field name="arch" type="xml">
 			<tree default_order="" string="" >
-				<field name="name" optional="show hide"/>
-				
+				<field name="name"/>
 			</tree>
 		</field>
 	</record>

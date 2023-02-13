@@ -7,5 +7,6 @@
 # def uninstall_hook(cr, registry):
     # pass
 
+from .controllers import *
 from .models import *
 # from .tests import *
