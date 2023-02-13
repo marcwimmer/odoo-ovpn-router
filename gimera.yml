@@ -7,11 +7,6 @@ repos:
   type: integrated
   url: https://github.com/odoo/odoo
 - branch: '16.0'
-  path: enterprise
-  sha: b895cbdb0ea2f890bb87649c3f70a2df354d13ef
-  type: integrated
-  url: git@github.com:odoo/enterprise
-- branch: '16.0'
   path: themes
   sha: 2d7c8ba5add9e00a9f9b9098ba2fa2a133cd2fb6
   type: integrated
