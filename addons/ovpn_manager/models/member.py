@@ -39,3 +39,6 @@ class OvpnMember(models.Model):
         for rec in self:
             res[rec.ip_address] = [rec.name, rec.partner_id.email]
         return res
+
+    def download_vpn(self):
+        pass
