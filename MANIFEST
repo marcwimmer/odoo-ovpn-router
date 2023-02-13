@@ -10,7 +10,6 @@
     "addons_paths": [
         "odoo/odoo/addons",
         "odoo/addons",
-        "enterprise",
         "themes",
         "addons",
     ]
