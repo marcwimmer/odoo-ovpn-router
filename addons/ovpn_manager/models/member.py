@@ -5,6 +5,7 @@ import ipaddress
 
 class OvpnMember(models.Model):
     _name = "ovpn.member"
+    _order = 'is_master, ip_address'
 
     name = fields.Char("Name", required=True)
     partner_id = fields.Many2one("res.partner", string="Partner")
