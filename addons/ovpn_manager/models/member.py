@@ -1,3 +1,5 @@
+import os
+from pathlib import Path
 from odoo import _, api, fields, models, SUPERUSER_ID
 from odoo.exceptions import UserError, RedirectWarning, ValidationError
 import ipaddress
@@ -13,6 +15,7 @@ class OvpnMember(models.Model):
     ip_address = fields.Char("IP Address", required=True)
     is_master = fields.Boolean("Is Master")
     force_remote = fields.Char("Force Remote", help="e.g. 127.0.0.1 1194")
+    cert_content = fields.Binary("Certificate Content", compute="_cert_content")
 
     _sql_constraints = [
         (
@@ -21,6 +24,11 @@ class OvpnMember(models.Model):
             _("Only one unique entry allowed."),
         ),
     ]
+
+    def _cert_content(self):
+        for rec in self:
+            file = Path(os.getenv("OVPN_DATA")) / "clients" / f"{rec.name}.conf"
+            rec.cert_content = file.read_bytes()
 
     @api.constrains("ip_address")
     def _check_ip(self):
@@ -42,3 +50,5 @@ class OvpnMember(models.Model):
 
     def download_vpn(self):
         pass
+
+
