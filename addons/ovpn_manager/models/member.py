@@ -15,7 +15,7 @@ class OvpnMember(models.Model):
     ip_address = fields.Char("IP Address", required=True)
     is_master = fields.Boolean("Is Master")
     force_remote = fields.Char("Force Remote", help="e.g. 127.0.0.1 1194")
-    cert_content = fields.Binary("Certificate Content", compute="_cert_content")
+    cert_content = fields.Binary("Certificate Content", compute="_cert_content", attachment=True)
 
     _sql_constraints = [
         (
@@ -50,5 +50,3 @@ class OvpnMember(models.Model):
 
     def download_vpn(self):
         pass
-
-

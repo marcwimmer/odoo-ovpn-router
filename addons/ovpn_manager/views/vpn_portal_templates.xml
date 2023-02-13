@@ -45,8 +45,8 @@
                         </td>
                         <td>
                             <td class="text-center">
-                                <a  t-att-href="vpn.download_vpn()" title="Download" aria-label="Download" class="btn btn-sm btn-primary" role="button">
-                                    <i class="fa fa-arrow-circle-right"/><span class='d-none d-md-inline'> Download</span>
+                                <a  t-attf-href="/web/content/ovpn.member/#{vpn.id}/cert_content?download=true" title="Download" aria-label="Download" class="btn btn-sm btn-primary" role="button">
+                                    <i class="fa fa fa-download"/><span class='d-none d-md-inline'> Download</span>
                                 </a>
                             </td>
                         </td>
