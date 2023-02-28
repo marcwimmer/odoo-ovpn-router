@@ -59,6 +59,14 @@ class OvpnMember(models.Model):
         hash = self._get_hash(str(self.id) + time)
         url += f"?hash={hash}"
         return url
+
+    def download(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_url',
+            'url': self.download_vpn_link(),
+            'target': 'self'
+        }
         
     @api.model
     def _get_time_for_hash(self):

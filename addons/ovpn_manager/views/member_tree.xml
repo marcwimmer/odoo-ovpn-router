@@ -5,6 +5,7 @@
 			<field name="model">ovpn.member</field>
 			<field name="arch" type="xml">
 				<tree editable="bottom">
+					<button name="download" icon="fa-download" type="object" />
 					<field name="name" />
 					<field name="ip_address" />
 					<field name="partner_id"/>
