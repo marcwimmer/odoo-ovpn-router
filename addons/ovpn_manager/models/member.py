@@ -1,8 +1,12 @@
 import os
 from pathlib import Path
 from odoo import _, api, fields, models, SUPERUSER_ID
+from pathlib import Path
+import arrow
 from odoo.exceptions import UserError, RedirectWarning, ValidationError
 import ipaddress
+import hashlib
+
 
 
 class OvpnMember(models.Model):
@@ -48,5 +52,25 @@ class OvpnMember(models.Model):
             res[rec.ip_address] = [rec.name, rec.partner_id.email]
         return res
 
-    def download_vpn(self):
-        pass
+    def download_vpn_link(self):
+        url = self.env['ir.config_parameter'].get_param(key="web.base.url", default=False)
+        time = self._get_time_for_hash()
+        url += f'/download/vpn/{self.id}'
+        hash = self._get_hash(str(self.id) + time)
+        url += f"?hash={hash}"
+        return url
+        
+    @api.model
+    def _get_time_for_hash(self):
+        return arrow.get().strftime("%Y-%m-%d %H:00:00")
+
+    def _get_hash(self, value):
+        my_bytes = value.encode('utf-8')
+        my_hash = hashlib.sha512(my_bytes)
+        hex_hash = my_hash.hexdigest()
+        return hex_hash
+
+    def _get_content(self):
+        self.ensure_one()
+        file = Path("/tmp/ovpn.data") / 'clients' / f"{self.name}.conf"
+        return file.read_bytes()
