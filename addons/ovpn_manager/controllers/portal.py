@@ -122,7 +122,7 @@ class PortalAccount(CustomerPortal):
         filename = f"{member.name}.conf"
         document = member._get_content()
         return http.request.make_response(
-            base64.b64decode(document),
+            document,
             headers=[
                 ("Content-Type", "application/octet-stream"),
                 ("Content-Disposition", content_disposition(filename)),
