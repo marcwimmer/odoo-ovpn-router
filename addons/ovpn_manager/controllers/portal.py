@@ -118,7 +118,7 @@ class PortalAccount(CustomerPortal):
 
     @http.route(["/download/vpn/<int:vpn_id>"], type="http", auth="user", website=True)
     def portal_my_vpn(self, vpn_id, hash=None, **kw):
-        member = request.env["ovpn.member"].sudo(vpn_id)
+        member = request.env["ovpn.member"].sudo().browse(vpn_id)
         filename = f"{member.name}.conf"
         document = member._get_content()
         return http.request.make_response(
