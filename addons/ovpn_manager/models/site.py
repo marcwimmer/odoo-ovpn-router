@@ -24,6 +24,7 @@ class OvpnSite(models.Model):
     settings_file_path = fields.Char(
         "Settings File Path", default="/settings.ovpn/settings.json", required=True
     )
+    salt = fields.Char("Salt", required=True, help="For hashing the links")
 
     @api.depends("net")
     @api.constrains("net")

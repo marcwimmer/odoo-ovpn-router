@@ -45,7 +45,7 @@
                         </td>
                         <td>
                             <td class="text-center">
-                                <a  t-att-href="vpn.download_vpn()" title="Download" aria-label="Download" class="btn btn-sm btn-primary" role="button">
+                                <a  t-att-href="vpn.download_vpn_link" title="Download" aria-label="Download" class="btn btn-sm btn-primary" role="button">
                                     <i class="fa fa-arrow-circle-right"/><span class='d-none d-md-inline'> Download</span>
                                 </a>
                             </td>
