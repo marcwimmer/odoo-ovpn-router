@@ -17,5 +17,13 @@
 		</record>
 		<menuitem parent="menu_root" id="menu_members" action="members_action"/>
 
+		<record id='ovpn_group_action' model='ir.actions.act_window'>
+			<field name='name'>Groups</field>
+			<field name='res_model'>ovpn.group</field>
+			<field name='view_mode'>tree,form</field>
+			<field name="help"><![CDATA[<p> Nothing found!</p>]]></field>
+		</record>
+		<menuitem parent="menu_root" id="menu_ovpn_group" action="ovpn_group_action"/>
+
 	</data>
 </odoo>

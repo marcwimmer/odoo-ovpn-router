@@ -6,6 +6,7 @@
 		<field name="arch" type="xml">
 			<tree default_order="" string="" >
 				<field name="name" />
+				<field name="site_id"/>
 				
 			</tree>
 		</field>
