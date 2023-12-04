@@ -48,19 +48,6 @@ class OvpnMember(models.Model):
             s2 = ".".join(list(map(convert, s)))
             rec.ip_address_sortable = s2
 
-    def _compute_ip_address(self):
-        for rec in self:
-            s = (rec.ip_address or '').split(".")
-            if not s:
-                rec.ip_address_sortable = ""
-                continue
-
-            def convert(x):
-                x = str(x).zfill(3)
-                return x
-            s2 = '.'.join(list(map(convert, s)))
-            rec.ip_address_sortable = s2
-
     _sql_constraints = [
         (
             "ip_address_unique",
