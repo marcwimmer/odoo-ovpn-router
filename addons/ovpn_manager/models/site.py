@@ -69,7 +69,7 @@ class OvpnSite(models.Model):
             "ccdroutes": {"master": []},
         }
         if random:
-            res['random'] = add_random.randint(1,999999)
+            res['random'] = random.randint(1,999999)
         return json.dumps(res, indent=4)
 
     def match_ip(self, ip):
