@@ -3,6 +3,7 @@ import json
 from odoo.exceptions import UserError, RedirectWarning, ValidationError
 import ipaddress
 from pathlib import Path
+import random
 
 
 class OvpnSite(models.Model):
@@ -40,10 +41,11 @@ class OvpnSite(models.Model):
                 rec.netmask_int = int(rec.net.split("/")[1])
 
     def generate_json(self):
-        self.json_content = self._get_json()
+        data = self._get_json(random=True)
+        self.json_content = data
         Path(self.settings_file_path).write_text(self.json_content)
 
-    def _get_json(self):
+    def _get_json(self, random=False):
         self.ensure_one()
 
         remotes_per_client = {}
@@ -66,6 +68,8 @@ class OvpnSite(models.Model):
             # ????
             "ccdroutes": {"master": []},
         }
+        if random:
+            res['random'] = random.randint(1,999999)
         return json.dumps(res, indent=4)
 
     def match_ip(self, ip):
