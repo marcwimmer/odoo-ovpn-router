@@ -41,11 +41,11 @@ class OvpnSite(models.Model):
                 rec.netmask_int = int(rec.net.split("/")[1])
 
     def generate_json(self):
-        data = self._get_json(add_random=True)
+        data = self._get_json()
         self.json_content = data
         Path(self.settings_file_path).write_text(self.json_content)
 
-    def _get_json(self, add_random=False):
+    def _get_json(self):
         self.ensure_one()
 
         remotes_per_client = {}
@@ -67,9 +67,8 @@ class OvpnSite(models.Model):
             "remotes_per_client": remotes_per_client,
             # ????
             "ccdroutes": {"master": []},
+            "create_date": fields.Datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         }
-        if random:
-            res['random'] = random.randint(1,999999)
         return json.dumps(res, indent=4)
 
     def match_ip(self, ip):
