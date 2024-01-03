@@ -7,6 +7,7 @@
 			<tree default_order="" string="" >
 				<field name="name" />
 				<field name="site_id"/>
+				<field name="member_ids" widget="many2many_tags"/>
 				
 			</tree>
 		</field>
