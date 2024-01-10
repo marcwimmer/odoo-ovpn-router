@@ -13,6 +13,8 @@
 								<field name="name" colspan="4" class="oe_inline" />
 							</h1>
 						</div>
+						<group>
+						<field name="site_id"/></group>
 						<group string="Members" col="2">
 							<field name="member_ids" />
 						</group>
