@@ -6,6 +6,7 @@
                 'views/assets.xml',
                 'views/group_form.xml',
                 'views/group_tree.xml',
+                'views/member_form.xml',
                 'views/member_tree.xml',
                 'views/site_form.xml',
                 'views/site_tree.xml',

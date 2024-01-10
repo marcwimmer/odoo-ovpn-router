@@ -1,0 +1,35 @@
+<odoo>
+	<data noupdate='0'>
+
+<record id="ovpn_member_form" model="ir.ui.view">
+	<field name="name">ovpn.member form</field>
+	<field name="model">ovpn.member</field>
+	<field name="arch" type="xml">
+		<form string="">
+			<header>
+								<button name="download" icon="fa-download" type="object" />
+			</header>
+			<sheet>
+				<div class="oe_title">
+					<h1>
+						<field name="name" colspan="4" class="oe_inline" />
+					</h1>
+				</div>
+				<group string="" col="4">
+					<field name="site_id"/>
+					<field name="ip_address_sortable" invisible='0'/>
+					<field name="name" />
+					<field name="ip_address" />
+					<field name="partner_id"/>
+					<field name="is_master"/>
+					<field name="force_remote"/>
+					<newline/>
+					<field name="download_link"/>
+				</group>
+			</sheet>
+		</form>
+	</field>
+</record>	
+
+	</data>
+</odoo>

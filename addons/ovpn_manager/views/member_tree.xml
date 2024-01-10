@@ -4,7 +4,7 @@
 		<record id="view_ovpn_member_tree" model="ir.ui.view">
 			<field name="model">ovpn.member</field>
 			<field name="arch" type="xml">
-				<tree editable="bottom">
+				<tree>
 					<button name="download" icon="fa-download" type="object" />
 					<field name="site_id"/>
 					<field name="ip_address_sortable" invisible='0'/>
