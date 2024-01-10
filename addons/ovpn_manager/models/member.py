@@ -140,6 +140,11 @@ class OvpnMember(models.Model):
 
             res['ip_address'] = site._next_ip()
         return res
+
+    @api.onchange("site_id")
+    def _changed_site(self):
+        if self.site_id:
+            self.ip_address = self.site_id._next_ip()
     
     @api.model
     def _clear_downloads(self):

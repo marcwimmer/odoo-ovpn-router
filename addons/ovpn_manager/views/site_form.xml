@@ -18,7 +18,7 @@
 						</div>
 						<notebook>
 							<page string="Members">
-								<field name="member_ids" nolabel="1"/>
+								<field name="member_ids" nolabel="1" context="{'default_site_id': id}"/>
 							</page>
 							<page string="Details">
 								<group>
