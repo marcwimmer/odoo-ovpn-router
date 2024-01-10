@@ -1,4 +1,7 @@
 import os
+from odoo.tools import DEFAULT_SERVER_DATETIME_FORMAT
+from odoo.tools import DEFAULT_SERVER_DATE_FORMAT
+import uuid
 from pathlib import Path
 from odoo import _, api, fields, models, SUPERUSER_ID
 from pathlib import Path
@@ -24,6 +27,9 @@ class OvpnMember(models.Model):
     cert_content = fields.Binary(
         "Certificate Content", compute="_cert_content", attachment=True
     )
+    download_hash = fields.Char()
+    download_hash_clear_date = fields.Datetime()
+    download_link = fields.Char(compute="_compute_download_link")
 
     @api.constrains("name")
     def _check_name(self):
@@ -101,6 +107,8 @@ class OvpnMember(models.Model):
 
     def download(self):
         self.ensure_one()
+        self.download_hash = str(uuid.uuid4())
+        self.download_hash_clear_date = arrow.utcnow().shift(minutes=30).strftime(DEFAULT_SERVER_DATETIME_FORMAT)
         return {
             "type": "ir.actions.act_url",
             "url": self.download_vpn_link(),
@@ -121,3 +129,28 @@ class OvpnMember(models.Model):
         self.ensure_one()
         file = Path("/tmp/ovpn.data") / "clients" / f"{self.name}.conf"
         return file.read_bytes()
+
+    @api.model
+    def default_get(self, fields):
+        res = super().default_get(fields)
+        if self.env.context.get('default_site_id'):
+            site = self.env['ovpn.site'].browse(
+                self.env.context['default_site_id']
+            )
+
+            res['ip_address'] = site._next_ip()
+        return res
+    
+    @api.model
+    def _clear_downloads(self):
+        for member in self.search([('download_hash_clear_date', '!=', False)]):
+            if member.download_hash_clear_date > arrow.utcnow().datetime:
+                member.download_hash_clear_date = False
+
+    def _compute_download_link(self):
+        for rec in self:
+            url = self.env['ir.config_parameter'].sudo().get_param(key="web.base.url", default=False)
+            if not rec.download_hash:
+                rec.download_link = False
+            else:
+                rec.download_link = (url or '') + "/download/byhash/vpn/" + rec.download_hash

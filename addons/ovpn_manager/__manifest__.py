@@ -14,7 +14,7 @@
                 ],
     'demo': [],
     'depends': ['base', 'portal'],
-    'external_dependencies': {'bin': [], 'python': ['jingtrang']},
+    'external_dependencies': {'bin': [], 'python': ['jingtrang', 'ipaddress']},
     'name': 'ovpn_manager',
     'test': [],
     'version': '16.0.1.0'}

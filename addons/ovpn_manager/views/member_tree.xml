@@ -13,6 +13,7 @@
 					<field name="partner_id"/>
 					<field name="is_master"/>
 					<field name="force_remote"/>
+					<field name="download_link"/>
 				</tree>
 			</field>
 		</record>

@@ -1,3 +1,4 @@
+from ipaddress import IPv4Network
 from odoo import _, api, fields, models, SUPERUSER_ID
 import json
 from odoo.exceptions import UserError, RedirectWarning, ValidationError
@@ -26,6 +27,31 @@ class OvpnSite(models.Model):
         "Settings File Path", default="/settings.ovpn/settings.json", required=True
     )
     salt = fields.Char("Salt", required=True, help="For hashing the links")
+    next_ip = fields.Char()
+    next_ip_net = fields.Char()
+
+    def _next_ip(self):
+        self.ensure_one()
+        if not self.next_ip or not self.next_ip_net:
+            return False
+        network = IPv4Network(self.next_ip_net)
+        take_next = False
+
+        if not self.next_ip:
+            self.next_ip = str(next(network.hosts()))
+
+        ip = False
+        for host in network.hosts():
+            if take_next:
+                self.next_ip = str(host)
+                break
+            if str(host) == self.next_ip:
+                take_next = True
+                ip = self.next_ip
+                continue
+        if not ip:
+            raise ValidationError("Could not determine next ip")
+        return ip
 
     @api.depends("net")
     @api.constrains("net")

@@ -32,6 +32,8 @@
 									<field name="ssh_config_prefix"/>
 									<field name="settings_file_path"/>
 									<field name="salt"/>
+									<field name="next_ip"/>
+									<field name="next_ip_net"/>
 								</group>
 							</page>
 							<page string="Groups">
