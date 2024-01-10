@@ -34,7 +34,7 @@ class OvpnMember(models.Model):
     @api.constrains("name")
     def _check_name(self):
         for rec in self:
-            allowed = "ABCDEFGHIJKLMNOPQRSTUVWXYZ_"
+            allowed = "ABCDEFGHIJKLMNOPQRSTUVWXYZ_-"
             for c in rec.name:
                 if c.lower() not in allowed and c.upper() not in allowed:
                     raise ValidationError(f"Not allowed character: {c}")
