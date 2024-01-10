@@ -15,16 +15,17 @@
 						<field name="name" colspan="4" class="oe_inline" />
 					</h1>
 				</div>
+				<group>
+					<field name="download_link"/>
+				</group>
 				<group string="" col="4">
-					<field name="site_id"/>
-					<field name="ip_address_sortable" invisible='0'/>
-					<field name="name" />
-					<field name="ip_address" />
+					<field name="site_id" required='1'/>
+					<field name="name"  required='1'/>
+					<field name="ip_address"  required='1'/>
 					<field name="partner_id"/>
 					<field name="is_master"/>
 					<field name="force_remote"/>
 					<newline/>
-					<field name="download_link"/>
 				</group>
 			</sheet>
 		</form>
