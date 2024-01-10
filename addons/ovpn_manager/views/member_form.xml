@@ -18,7 +18,7 @@
 				<group>
 					<field name="download_link"/>
 				</group>
-				<group string="" col="4">
+				<group string="" col="2">
 					<field name="site_id" required='1'/>
 					<field name="name"  required='1'/>
 					<field name="ip_address"  required='1'/>
