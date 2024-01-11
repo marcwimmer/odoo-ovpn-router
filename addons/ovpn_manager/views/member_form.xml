@@ -17,6 +17,7 @@
 				</div>
 				<group>
 					<field name="download_link"/>
+					<field name="download_hash_clear_date"/>
 				</group>
 				<group string="" col="2">
 					<field name="site_id" required='1'/>
