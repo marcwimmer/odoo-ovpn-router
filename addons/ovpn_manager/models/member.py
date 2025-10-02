@@ -34,10 +34,13 @@ class OvpnMember(models.Model):
     @api.constrains("name")
     def _check_name(self):
         for rec in self:
-            allowed = "ABCDEFGHIJKLMNOPQRSTUVWXYZ_-"
+            allowed = "ABCDEFGHIJKLMNOPQRSTUVWXYZ_-1234567890"
             for c in rec.name:
                 if c.lower() not in allowed and c.upper() not in allowed:
                     raise ValidationError(f"Not allowed character: {c}")
+            for c in "01234567890":
+                if rec.name.startswith(c):
+                    raise ValidationError("Name cannot start with a number")
 
     @api.depends("ip_address")
     def _compute_ip_address(self):
