@@ -1,6 +1,7 @@
 from ipaddress import IPv4Network
 from odoo import _, api, fields, models, SUPERUSER_ID
 import json
+import uuid
 from odoo.exceptions import UserError, RedirectWarning, ValidationError
 import ipaddress
 from pathlib import Path
@@ -29,6 +30,7 @@ class OvpnSite(models.Model):
     salt = fields.Char("Salt", required=True, help="For hashing the links")
     next_ip = fields.Char()
     next_ip_net = fields.Char()
+    one_time_password = fields.Char("One Time Password")
 
     def _next_ip(self):
         self.ensure_one()
@@ -103,6 +105,11 @@ class OvpnSite(models.Model):
             raise ValidationError(
                 _("IP Address %s is not in network %s") % (ip, network)
             )
+
+    @api.model
+    def _refresh_one_time_password(self):
+        for site in self.search([]):
+            site.one_time_password = str(uuid.uuid4())
 
     @api.constrains("net")
     def _check_members(self):
