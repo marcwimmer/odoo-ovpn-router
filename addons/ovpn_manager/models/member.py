@@ -163,12 +163,13 @@ class OvpnMember(models.Model):
 
     @api.model
     def _clear_downloads(self):
-        for member in self.search([("download_hash_clear_date", "!=", False)]):
+        for member in self.search([]):
             if (
                 not member.download_hash_clear_date
                 or member.download_hash_clear_date < arrow.utcnow().naive
             ):
                 member.download_hash_clear_date = False
+                member.download_hash = False
 
     @api.depends("download_hash")
     def _compute_download_link(self):
