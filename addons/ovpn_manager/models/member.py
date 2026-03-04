@@ -29,7 +29,7 @@ class OvpnMember(models.Model):
     )
     download_hash = fields.Char()
     download_hash_clear_date = fields.Datetime()
-    download_link = fields.Char(compute="_compute_download_link")
+    download_link = fields.Char(compute="_compute_download_link", store=False)
 
     @api.constrains("name")
     def _check_name(self):
@@ -170,6 +170,7 @@ class OvpnMember(models.Model):
             ):
                 member.download_hash_clear_date = False
 
+    @api.depends("download_hash")
     def _compute_download_link(self):
         for rec in self:
             url = (
