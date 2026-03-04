@@ -1,0 +1,16 @@
+repos:
+  - repo: https://github.com/psf/black
+    rev: 24.10.0
+    hooks:
+      - id: black
+        language_version: python3
+        files: ^addons/
+
+  - repo: local
+    hooks:
+      - id: xmllint-format
+        name: xmllint format
+        language: system
+        entry: bash -c 'for f in "$@"; do xmllint --format "$f" > "$f.tmp" && mv "$f.tmp" "$f"; done' --
+        types: [xml]
+        files: ^addons/

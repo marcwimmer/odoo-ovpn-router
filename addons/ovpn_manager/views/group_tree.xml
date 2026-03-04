@@ -1,17 +1,15 @@
+<?xml version="1.0"?>
 <odoo>
-	<data noupdate='0'>
-
-	<record id="view_ovpn_tree_tree" model="ir.ui.view">
-		<field name="model">ovpn.group</field>
-		<field name="arch" type="xml">
-			<tree default_order="" string="" >
-				<field name="name" />
-				<field name="site_id"/>
-				<field name="member_ids" widget="many2many_tags"/>
-				
-			</tree>
-		</field>
-	</record>
-
-	</data>
+  <data noupdate="0">
+    <record id="view_ovpn_tree_tree" model="ir.ui.view">
+      <field name="model">ovpn.group</field>
+      <field name="arch" type="xml">
+        <tree default_order="" string="">
+          <field name="name"/>
+          <field name="site_id"/>
+          <field name="member_ids" widget="many2many_tags"/>
+        </tree>
+      </field>
+    </record>
+  </data>
 </odoo>

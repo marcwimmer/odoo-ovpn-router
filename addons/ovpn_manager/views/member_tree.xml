@@ -1,22 +1,21 @@
+<?xml version="1.0"?>
 <odoo>
-	<data noupdate='0'>
-
-		<record id="view_ovpn_member_tree" model="ir.ui.view">
-			<field name="model">ovpn.member</field>
-			<field name="arch" type="xml">
-				<tree>
-					<button name="download" icon="fa-download" type="object" />
-					<field name="site_id"/>
-					<field name="ip_address_sortable" invisible='0'/>
-					<field name="name" />
-					<field name="ip_address" />
-					<field name="partner_id"/>
-					<field name="is_master"/>
-					<field name="force_remote"/>
-					<field name="download_link"/>
-				</tree>
-			</field>
-		</record>
-
-	</data>
+  <data noupdate="0">
+    <record id="view_ovpn_member_tree" model="ir.ui.view">
+      <field name="model">ovpn.member</field>
+      <field name="arch" type="xml">
+        <tree>
+          <button name="download" icon="fa-download" type="object"/>
+          <field name="site_id"/>
+          <field name="ip_address_sortable" invisible="0"/>
+          <field name="name"/>
+          <field name="ip_address"/>
+          <field name="partner_id"/>
+          <field name="is_master"/>
+          <field name="force_remote"/>
+          <field name="download_link"/>
+        </tree>
+      </field>
+    </record>
+  </data>
 </odoo>

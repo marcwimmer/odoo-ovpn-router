@@ -1,6 +1,7 @@
+<?xml version="1.0"?>
 <odoo>
-	<data>
-        <!--
+  <data>
+    <!--
 		<template id="assets_backend" name="ovpn_manager assets" inherit_id="web.assets_backend">
 			<xpath expr="." position="inside">
 				<script type="text/javascript" src="/ovpn_manager/static/src/js/ovpn_manager.js"></script>
@@ -8,5 +9,5 @@
 			</xpath>
 		</template>
         -->
-	</data>
+  </data>
 </odoo>

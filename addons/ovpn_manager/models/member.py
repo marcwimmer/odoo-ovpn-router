@@ -103,7 +103,7 @@ class OvpnMember(models.Model):
             key="web.base.url", default=False
         )
         time = self._get_time_for_hash()
-        url += f"/download/vpn/{self.id}"
+        url += f"/download/byhash/vpn/{self.download_hash}"
         hash = self._get_hash(str(self.id) + time)
         url += f"?hash={hash}"
         return url
@@ -111,7 +111,16 @@ class OvpnMember(models.Model):
     def download(self):
         self.ensure_one()
         self.download_hash = str(uuid.uuid4())
-        self.download_hash_clear_date = arrow.utcnow().shift(minutes=30).strftime(DEFAULT_SERVER_DATETIME_FORMAT)
+        expiration_minutes = int(
+            self.env["ir.config_parameter"].get_param(
+                key="ovpn.download_hash_expiration_time", default=30
+            )
+        )
+        self.download_hash_clear_date = (
+            arrow.utcnow()
+            .shift(minutes=expiration_minutes)
+            .strftime(DEFAULT_SERVER_DATETIME_FORMAT)
+        )
         return {
             "type": "ir.actions.act_url",
             "url": self.download_vpn_link(),
@@ -130,35 +139,47 @@ class OvpnMember(models.Model):
 
     def _get_content(self):
         self.ensure_one()
-        file = Path("/tmp/ovpn.data") / "clients" / f"{self.name}.conf"
+        path = (
+            self.env["ir.config_parameter"]
+            .sudo()
+            .get_param("ovpn.client_config_dir", default="")
+        )
+        file = Path(path) / f"{self.name}.conf"
         return file.read_bytes()
 
     @api.model
     def default_get(self, fields):
         res = super().default_get(fields)
-        if self.env.context.get('default_site_id'):
-            site = self.env['ovpn.site'].browse(
-                self.env.context['default_site_id']
-            )
+        if self.env.context.get("default_site_id"):
+            site = self.env["ovpn.site"].browse(self.env.context["default_site_id"])
 
-            res['ip_address'] = site._next_ip()
+            res["ip_address"] = site._next_ip()
         return res
 
     @api.onchange("site_id")
     def _changed_site(self):
         if self.site_id:
             self.ip_address = self.site_id._next_ip()
-    
+
     @api.model
     def _clear_downloads(self):
-        for member in self.search([('download_hash_clear_date', '!=', False)]):
-            if member.download_hash_clear_date > arrow.utcnow().datetime:
+        for member in self.search([("download_hash_clear_date", "!=", False)]):
+            if (
+                not member.download_hash_clear_date
+                or member.download_hash_clear_date < arrow.utcnow().naive
+            ):
                 member.download_hash_clear_date = False
 
     def _compute_download_link(self):
         for rec in self:
-            url = self.env['ir.config_parameter'].sudo().get_param(key="web.base.url", default=False)
+            url = (
+                self.env["ir.config_parameter"]
+                .sudo()
+                .get_param(key="web.base.url", default=False)
+            )
             if not rec.download_hash:
                 rec.download_link = False
             else:
-                rec.download_link = (url or '') + "/download/byhash/vpn/" + rec.download_hash
+                rec.download_link = (
+                    (url or "") + "/download/byhash/vpn/" + rec.download_hash
+                )

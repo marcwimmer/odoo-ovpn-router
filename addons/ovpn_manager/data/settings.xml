@@ -1,7 +1,13 @@
+<?xml version="1.0"?>
 <odoo>
-	<data noupdate='0'>
-
-		
-
-	</data>
+  <data noupdate="1">
+    <record id="ovpn_client_config_dir" model="ir.config_parameter">
+      <field name="key">ovpn.client_config_dir</field>
+      <field name="value">/etc/openvpn/clients</field>
+    </record>
+    <record id="ovpn_download_hash_expiration_time" model="ir.config_parameter">
+      <field name="key">ovpn.download_hash_expiration_time</field>
+      <field name="value">30</field>
+    </record>
+  </data>
 </odoo>
