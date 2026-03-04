@@ -19,6 +19,11 @@
               <page string="Members">
                 <field name="member_ids" nolabel="1" context="{'default_site_id': id}"/>
               </page>
+              <page string="Download Password">
+                <group>
+                  <field name="one_time_password"/>
+                </group>
+              </page>
               <page string="Details">
                 <group>
                   <field name="remote"/>
