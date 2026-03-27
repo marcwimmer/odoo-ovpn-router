@@ -15,6 +15,7 @@ class OvpnMember(models.Model):
     _name = "ovpn.member"
     _order = "is_master, ip_address_sortable"
 
+    active = fields.Boolean("Active", default=True)
     name = fields.Char("Name", required=True)
     partner_id = fields.Many2one("res.partner", string="Partner")
     site_id = fields.Many2one("ovpn.site", string="Site", required=True)

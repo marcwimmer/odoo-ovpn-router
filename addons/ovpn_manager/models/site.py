@@ -34,23 +34,25 @@ class OvpnSite(models.Model):
 
     def _next_ip(self):
         self.ensure_one()
-        if not self.next_ip or not self.next_ip_net:
+        if not self.next_ip_net:
             return False
+
         network = IPv4Network(self.next_ip_net)
-        take_next = False
+        hosts = list(network.hosts())
 
         if not self.next_ip:
-            self.next_ip = str(next(network.hosts()))
+            self.next_ip = str(hosts[0])
 
         ip = False
-        for host in network.hosts():
-            if take_next:
-                self.next_ip = str(host)
-                break
+        for i, host in enumerate(hosts):
             if str(host) == self.next_ip:
-                take_next = True
                 ip = self.next_ip
-                continue
+                if i + 1 < len(hosts):
+                    self.next_ip = str(hosts[i + 1])
+                else:
+                    raise ValidationError("No more IPs available in network")
+                break
+
         if not ip:
             raise ValidationError("Could not determine next ip")
         return ip
@@ -61,7 +63,7 @@ class OvpnSite(models.Model):
         for rec in self:
             try:
                 network = ipaddress.IPv4Network(rec.net)
-            except:
+            except (ValueError, TypeError):
                 rec.netmask = "n/a"
                 rec.netmask_int = 0
             else:
@@ -69,6 +71,7 @@ class OvpnSite(models.Model):
                 rec.netmask_int = int(rec.net.split("/")[1])
 
     def generate_json(self):
+        self.ensure_one()
         data = self._get_json()
         self.json_content = data
         Path(self.settings_file_path).write_text(self.json_content)

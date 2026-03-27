@@ -101,6 +101,43 @@
             gap: .5rem;
           }
           button[type="submit"]:hover { background: #6d28d9; }
+          .install-section {
+            margin-top: 1.8rem;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 1.4rem;
+          }
+          .install-section h3 {
+            font-size: .95rem;
+            font-weight: 700;
+            color: #1e1b4b;
+            margin-bottom: .8rem;
+          }
+          .install-section h4 {
+            font-size: .85rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: .3rem;
+            margin-top: .9rem;
+          }
+          .install-section h4:first-of-type { margin-top: 0; }
+          .install-section p {
+            font-size: .8rem;
+            color: #6b7280;
+            margin-bottom: .3rem;
+          }
+          .install-section code {
+            display: block;
+            background: #f5f3ff;
+            border: 1px solid #ddd6fe;
+            border-radius: 6px;
+            padding: .4rem .7rem;
+            font-size: .78rem;
+            color: #5b21b6;
+            font-family: "SF Mono", "Fira Code", monospace;
+            margin-top: .3rem;
+            margin-bottom: .2rem;
+            white-space: pre;
+          }
         </style>
       </head>
       <body>
@@ -129,6 +166,18 @@
               Download
             </button>
           </form>
+          <div class="install-section">
+            <h3>Installation Guide</h3>
+            <h4>macOS</h4>
+            <p>Install <a href="https://tunnelblick.net/" target="_blank" style="color:#7c3aed;">Tunnelblick</a> (recommended), then double-click the downloaded .conf file to import it.</p>
+            <h4>Linux</h4>
+            <p>Copy the config file and enable the service:</p>
+            <code>sudo cp &lt;name&gt;.conf /etc/openvpn/
+sudo systemctl daemon-reload
+sudo systemctl enable openvpn@&lt;name&gt;
+sudo systemctl restart openvpn@&lt;name&gt;</code>
+            <p>Replace <b>&lt;name&gt;</b> with the filename without the .conf extension.</p>
+          </div>
         </div>
       </body>
     </html>
