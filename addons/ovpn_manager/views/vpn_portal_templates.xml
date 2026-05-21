@@ -169,13 +169,14 @@
           <div class="install-section">
             <h3>Installation Guide</h3>
             <h4>macOS</h4>
-            <p>Install <a href="https://tunnelblick.net/" target="_blank" style="color:#7c3aed;">Tunnelblick</a> (recommended), then double-click the downloaded .conf file to import it.</p>
+            <p>Install the <a href="https://apps.apple.com/app/wireguard/id1451685025" target="_blank" style="color:#7c3aed;">WireGuard</a> app from the App Store, open it and choose <b>Import Tunnel(s) from File</b>, then select the downloaded .conf file.</p>
             <h4>Linux</h4>
-            <p>Copy the config file and enable the service (e.g. for <b>myserver.conf</b>):</p>
-            <code>sudo cp myserver.conf /etc/openvpn/
-sudo systemctl daemon-reload
-sudo systemctl enable openvpn@myserver
-sudo systemctl restart openvpn@myserver</code>
+            <p>Install WireGuard and bring up the tunnel (e.g. for <b>myserver.conf</b>):</p>
+            <code>sudo apt-get install -y wireguard wireguard-tools
+sudo cp myserver.conf /etc/wireguard/
+sudo chmod 600 /etc/wireguard/myserver.conf
+sudo wg-quick up myserver
+sudo systemctl enable wg-quick@myserver</code>
             <p>Replace <b>myserver</b> with your actual config filename (without .conf).</p>
           </div>
         </div>

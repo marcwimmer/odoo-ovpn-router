@@ -31,6 +31,11 @@ class OvpnSite(models.Model):
     next_ip = fields.Char()
     next_ip_net = fields.Char()
     one_time_password = fields.Char("One Time Password")
+    wg_interface_name = fields.Char(
+        "WireGuard Interface Name",
+        default="zebroo",
+        help="Used as config filename on client: /etc/wireguard/<name>.conf",
+    )
 
     def _next_ip(self):
         self.ensure_one()

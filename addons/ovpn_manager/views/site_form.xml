@@ -38,6 +38,7 @@
                   <field name="salt"/>
                   <field name="next_ip"/>
                   <field name="next_ip_net"/>
+                  <field name="wg_interface_name"/>
                 </group>
               </page>
               <page string="Groups">
