@@ -19,32 +19,36 @@
               <page string="Members">
                 <field name="member_ids" nolabel="1" context="{'default_site_id': id}"/>
               </page>
+              <page string="WireGuard">
+                <group>
+                  <field name="wg_server_public_key"/>
+                  <field name="wg_server_port"/>
+                  <field name="wg_allowed_ips"/>
+                </group>
+                <group string="wstunnel (TCP fallback for UDP-blocked clients)">
+                  <field name="wstunnel_host"/>
+                  <field name="wstunnel_port"/>
+                  <field name="wstunnel_path_prefix"/>
+                  <field name="wstunnel_version"/>
+                </group>
+              </page>
+              <page string="Network Settings">
+                <group>
+                  <field name="remote" string="Server IP"/>
+                  <field name="net" string="Network"/>
+                  <field name="next_ip"/>
+                  <field name="next_ip_net"/>
+                  <field name="wg_interface_name" string="Interface Name"/>
+                  <field name="settings_file_path" string="Settings File Path"/>
+                </group>
+              </page>
               <page string="Download Password">
                 <group>
                   <field name="one_time_password"/>
                 </group>
               </page>
-              <page string="Details">
-                <group>
-                  <field name="remote"/>
-                  <field name="remote_port"/>
-                  <field name="net"/>
-                  <field name="netmask"/>
-                  <field name="netmask_int"/>
-                  <field name="tun0_local"/>
-                  <field name="tun0_peer"/>
-                  <field name="ssh_config_prefix"/>
-                  <field name="settings_file_path"/>
-                  <field name="salt"/>
-                  <field name="next_ip"/>
-                  <field name="next_ip_net"/>
-                  <field name="wg_interface_name"/>
-                </group>
-              </page>
               <page string="Groups">
-                <field name="group_ids" nolabel="1">
-
-								</field>
+                <field name="group_ids" nolabel="1"/>
               </page>
               <page string="Generated JSON File">
                 <field name="json_content"/>

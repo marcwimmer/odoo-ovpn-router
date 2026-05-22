@@ -25,7 +25,7 @@ class OvpnSite(models.Model):
     group_ids = fields.One2many("ovpn.group", "site_id", string="Groups")
     member_ids = fields.One2many("ovpn.member", "site_id", string="Members")
     settings_file_path = fields.Char(
-        "Settings File Path", default="/settings.ovpn/settings.json", required=True
+        "Settings File Path", default="/etc/settings/settings.json", required=True
     )
     salt = fields.Char("Salt", required=True, help="For hashing the links")
     next_ip = fields.Char()
@@ -35,6 +35,32 @@ class OvpnSite(models.Model):
         "WireGuard Interface Name",
         default="zebroo",
         help="Used as config filename on client: /etc/wireguard/<name>.conf",
+    )
+    wg_server_public_key = fields.Char("WireGuard Server Public Key")
+    wg_server_port = fields.Integer("WireGuard Port", default=51820)
+    wg_allowed_ips = fields.Char(
+        "WireGuard Allowed IPs", default="10.222.0.0/22,10.8.0.0/16"
+    )
+    wstunnel_host = fields.Char(
+        "wstunnel Host",
+        default="vpn.zebroo.de",
+        help="Hostname the wstunnel client connects to (must resolve and have a valid TLS cert).",
+    )
+    wstunnel_port = fields.Integer(
+        "wstunnel TCP Port",
+        default=443,
+        help="TCP port for the WSS connection. Must match what nginx/wstunnel-server listens on.",
+    )
+    wstunnel_path_prefix = fields.Char(
+        "wstunnel Path Prefix",
+        default="wgws",
+        help="Shared-secret-ish URL prefix in the WS upgrade path. Must match the server's "
+        "--restrict-http-upgrade-path-prefix.",
+    )
+    wstunnel_version = fields.Char(
+        "wstunnel Version",
+        default="v10.5.5",
+        help="Release tag on github.com/erebe/wstunnel used by client install script.",
     )
 
     def _next_ip(self):

@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+<odoo>
+  <data>
+    <record id="view_ovpn_dashboard_kanban" model="ir.ui.view">
+      <field name="name">ovpn.dashboard.kanban</field>
+      <field name="model">ovpn.dashboard</field>
+      <field name="arch" type="xml">
+        <kanban class="o_ovpn_dashboard" create="false" edit="false" delete="false" group_create="false" records_draggable="false">
+          <field name="member_count"/>
+          <field name="site_count"/>
+          <field name="group_count"/>
+          <templates>
+            <t t-name="kanban-box">
+              <div class="o_ovpn_dashboard_wrap">
+                <div class="o_ovpn_dashboard_title">
+                  <h1>OVPN Manager</h1>
+                  <p>W&#xE4;hle einen Bereich</p>
+                </div>
+                <div class="o_ovpn_tiles">
+                  <a type="object" name="action_open_members" class="o_ovpn_tile o_ovpn_tile_members">
+                    <div class="o_ovpn_tile_icon">
+                      <i class="fa fa-users"/>
+                    </div>
+                    <div class="o_ovpn_tile_label">Members</div>
+                    <div class="o_ovpn_tile_count">
+                      <field name="member_count"/>
+                    </div>
+                  </a>
+                  <a type="object" name="action_open_sites" class="o_ovpn_tile o_ovpn_tile_sites">
+                    <div class="o_ovpn_tile_icon">
+                      <i class="fa fa-server"/>
+                    </div>
+                    <div class="o_ovpn_tile_label">Sites</div>
+                    <div class="o_ovpn_tile_count">
+                      <field name="site_count"/>
+                    </div>
+                  </a>
+                  <a type="object" name="action_open_groups" class="o_ovpn_tile o_ovpn_tile_groups">
+                    <div class="o_ovpn_tile_icon">
+                      <i class="fa fa-sitemap"/>
+                    </div>
+                    <div class="o_ovpn_tile_label">Groups</div>
+                    <div class="o_ovpn_tile_count">
+                      <field name="group_count"/>
+                    </div>
+                  </a>
+                </div>
+              </div>
+            </t>
+          </templates>
+        </kanban>
+      </field>
+    </record>
+    <record id="ovpn_dashboard_action" model="ir.actions.act_window">
+      <field name="name">OVPN</field>
+      <field name="res_model">ovpn.dashboard</field>
+      <field name="view_mode">kanban</field>
+      <field name="view_id" ref="view_ovpn_dashboard_kanban"/>
+      <field name="target">current</field>
+    </record>
+    <function model="ovpn.dashboard" name="_get_singleton"/>
+    <function model="ovpn.dashboard" name="_set_as_home_action"/>
+  </data>
+</odoo>

@@ -3,4 +3,5 @@ model_ovpn_site,ovpn_manager.group_ovpn_manager,access_ovpn_site_ovpn_manager,n/
 model_ovpn_member,ovpn_manager.group_ovpn_manager,ovpn_member_ovpn_manager,n/a,1,1,1,1
 model_ovpn_group,ovpn_manager.group_ovpn_manager,ovpn_group_ovpn_manager,n/a,1,1,1,1
 model_ovpn_member_ip_history,ovpn_manager.group_ovpn_manager,ovpn_member_ip_history_ovpn_manager,n/a,1,1,1,1
+model_ovpn_dashboard,ovpn_manager.group_ovpn_manager,access_ovpn_dashboard_ovpn_manager,n/a,1,1,1,1
 

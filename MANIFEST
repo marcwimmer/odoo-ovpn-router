@@ -2,7 +2,7 @@
     "server-wide-modules": [
         "web"
     ],
-    "version": "16.0",
+    "version": 16.0,
     "install": [
         "crm",
         "ovpn_manager"
@@ -11,6 +11,6 @@
         "odoo/odoo/addons",
         "odoo/addons",
         "themes",
-        "addons",
+        "addons"
     ]
 }

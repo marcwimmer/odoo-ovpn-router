@@ -1,13 +1,16 @@
 {
     "application": False,
-    "assets": {},
+    "assets": {
+        "web.assets_backend": [
+            "ovpn_manager/static/src/scss/dashboard.scss",
+        ],
+    },
     "author": "Marc Wimmer (marc@itewimmer.de)",
     "data": [
         "security/groups.xml",
         "security/ir.model.access.csv",
         "data/settings.xml",
         "data/cronjobs.xml",
-        "views/assets.xml",
         "views/group_form.xml",
         "views/group_tree.xml",
         "views/member_form.xml",
@@ -15,11 +18,12 @@
         "views/site_form.xml",
         "views/site_tree.xml",
         "views/vpn_portal_templates.xml",
+        "views/dashboard.xml",
         "views/menu.xml",
     ],
     "demo": [],
     "depends": ["base", "portal"],
-    "external_dependencies": {"bin": [], "python": ["jingtrang", "ipaddress"]},
+    "external_dependencies": {"bin": [], "python": ["jingtrang", "ipaddress", "arrow"]},
     "name": "ovpn_manager",
     "test": [],
     "version": "16.0.1.0",

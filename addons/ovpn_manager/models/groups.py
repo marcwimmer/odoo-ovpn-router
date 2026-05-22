@@ -10,6 +10,10 @@ class OvpnGroups(models.Model):
     member_ids = fields.Many2many("ovpn.member", string="Members")
     site_id = fields.Many2one("ovpn.site", string="Site", required=True)
 
+    def apply_site(self):
+        self.ensure_one()
+        self.site_id.generate_json()
+
     def _get_json(self):
         res = []
         for group in self:

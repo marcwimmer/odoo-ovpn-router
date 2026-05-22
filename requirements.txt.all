@@ -5,6 +5,7 @@ Pillow==9.0.1
 PyPDF2==1.26.0
 Werkzeug==0.16.1
 XlsxWriter==1.1.2
+arrow
 chardet==3.0.4
 cryptography==3.4.8
 decorator==4.4.2

@@ -168,16 +168,31 @@
           </form>
           <div class="install-section">
             <h3>Installation Guide</h3>
-            <h4>macOS</h4>
-            <p>Install the <a href="https://apps.apple.com/app/wireguard/id1451685025" target="_blank" style="color:#7c3aed;">WireGuard</a> app from the App Store, open it and choose <b>Import Tunnel(s) from File</b>, then select the downloaded .conf file.</p>
-            <h4>Linux</h4>
-            <p>Install WireGuard and bring up the tunnel (e.g. for <b>myserver.conf</b>):</p>
-            <code>sudo apt-get install -y wireguard wireguard-tools
+            <t t-if="is_wireguard">
+              <h4>Linux / Server (one-liner)</h4>
+              <p>Download and run as root &#x2014; installs WireGuard and activates the tunnel automatically:</p>
+              <code>curl -sSL https://vpn.zebroo.de/vpn/deploy/YOURLINK | bash</code>
+              <p>The deploy link is generated in the VPN admin portal (valid 10 min).</p>
+              <h4>macOS</h4>
+              <p>Install <a href="https://apps.apple.com/app/wireguard/id1451685025" target="_blank" style="color:#7c3aed;">WireGuard</a> from the App Store &#x2192; <b>Import Tunnel(s) from File</b> &#x2192; select the downloaded .conf file &#x2192; <b>Activate</b>.</p>
+              <h4>Windows</h4>
+              <p>1. Download <a href="https://www.wireguard.com/install/" target="_blank" style="color:#7c3aed;">WireGuard for Windows</a>.<br/>
+              2. Open WireGuard &#x2192; <b>Import tunnel(s) from file</b> &#x2192; select the downloaded .conf file &#x2192; <b>Activate</b>.</p>
+            </t>
+            <t t-else="">
+              <h4>macOS</h4>
+              <p>Install the <a href="https://apps.apple.com/app/wireguard/id1451685025" target="_blank" style="color:#7c3aed;">WireGuard</a> app from the App Store, open it and choose <b>Import Tunnel(s) from File</b>, then select the downloaded .conf file.</p>
+              <h4>Linux</h4>
+              <p>Install and activate the VPN tunnel:</p>
+              <code>sudo apt-get install -y wireguard wireguard-tools
 sudo cp myserver.conf /etc/wireguard/
 sudo chmod 600 /etc/wireguard/myserver.conf
 sudo wg-quick up myserver
 sudo systemctl enable wg-quick@myserver</code>
-            <p>Replace <b>myserver</b> with your actual config filename (without .conf).</p>
+              <h4>Windows</h4>
+              <p>1. Download <a href="https://www.wireguard.com/install/" target="_blank" style="color:#7c3aed;">WireGuard for Windows</a>.<br/>
+              2. Open WireGuard &#x2192; <b>Import tunnel(s) from file</b> &#x2192; select the downloaded .conf file &#x2192; <b>Activate</b>.</p>
+            </t>
           </div>
         </div>
       </body>

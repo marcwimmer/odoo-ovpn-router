@@ -6,7 +6,9 @@
       <field name="model">ovpn.group</field>
       <field name="arch" type="xml">
         <form string="">
-          <header/>
+          <header>
+            <button name="apply_site" string="Apply to VPN Server" icon="fa-check" type="object" class="btn-secondary"/>
+          </header>
           <sheet>
             <div class="oe_title">
               <h1>

@@ -30,54 +30,13 @@ class PortalAccount(CustomerPortal):
         if request.httprequest.method == "POST":
             password = kw.get("password", "")
             if site.one_time_password and password == site.one_time_password:
-                filename = f"{member.name}.conf"
-                document = member._get_content()
-                return http.request.make_response(
-                    document,
-                    headers=[
-                        ("Content-Type", "application/octet-stream"),
-                        ("Content-Disposition", content_disposition(filename)),
-                    ],
-                )
-            else:
-                error = _("Wrong password. Please try again.")
-
-        return request.render(
-            "ovpn_manager.vpn_download_password",
-            {
-                "hash": hash,
-                "member_name": member.name,
-                "error": error,
-            },
-        )
-
-    @http.route(
-        ["/vpn/deploy/<hash>"],
-        type="http",
-        auth="none",
-        methods=["GET"],
-        csrf=False,
-    )
-    def deploy_wg(self, hash=None, **kw):
-        member = (
-            request.env["ovpn.member"].sudo().search([("wg_deploy_hash", "=", hash)])
-        )
-        if not member or not member.wg_config:
-            return request.not_found()
-        if (
-            not member.wg_deploy_hash_expiry
-            or member.wg_deploy_hash_expiry < arrow.utcnow().naive
-        ):
-            return request.not_found()
-
-        iface = member.site_id.wg_interface_name or "zebroo"
-        config = member.wg_config.strip()
-        vpn_ip = member.ip_address
-
-        script = f"""#!/bin/bash
+                if member.wg_config:
+                    iface = site.wg_interface_name or "zebroo"
+                    config = member.wg_config.strip()
+                    vpn_ip = member.ip_address
+                    script = f"""#!/bin/bash
 set -e
 
-# Install wireguard — handle Debian Buster EOL (archive repos) and newer distros
 if grep -qi 'buster' /etc/os-release 2>/dev/null; then
     cat > /etc/apt/sources.list << 'APT_EOF'
 deb http://archive.debian.org/debian buster main contrib non-free
@@ -109,6 +68,52 @@ fi
 
 echo "WireGuard '{iface}' installed. VPN IP: {vpn_ip}"
 """
+                    return http.request.make_response(
+                        script,
+                        headers=[("Content-Type", "text/plain; charset=utf-8")],
+                    )
+                filename = f"{member.name}.conf"
+                document = member._get_content()
+                return http.request.make_response(
+                    document,
+                    headers=[
+                        ("Content-Type", "application/octet-stream"),
+                        ("Content-Disposition", content_disposition(filename)),
+                    ],
+                )
+            else:
+                error = _("Wrong password. Please try again.")
+
+        return request.render(
+            "ovpn_manager.vpn_download_password",
+            {
+                "hash": hash,
+                "member_name": member.name,
+                "error": error,
+                "is_wireguard": bool(member.wg_config),
+            },
+        )
+
+    @http.route(
+        ["/vpn/deploy/<hash>"],
+        type="http",
+        auth="none",
+        methods=["GET"],
+        csrf=False,
+    )
+    def deploy_wg(self, hash=None, **kw):
+        member = (
+            request.env["ovpn.member"].sudo().search([("wg_deploy_hash", "=", hash)])
+        )
+        if not member or not member.wg_config:
+            return request.not_found()
+        if (
+            not member.wg_deploy_hash_expiry
+            or member.wg_deploy_hash_expiry < arrow.utcnow().naive
+        ):
+            return request.not_found()
+
+        script = member._build_install_script()
         member.wg_deploy_hash = False
         member.wg_deploy_hash_expiry = False
         return http.request.make_response(

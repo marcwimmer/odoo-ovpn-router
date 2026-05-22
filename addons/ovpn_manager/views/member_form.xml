@@ -8,8 +8,8 @@
         <form string="">
           <header>
             <button name="download" icon="fa-download" type="object"/>
-            <button name="generate_temp_link" string="Download Link Now" icon="fa-link" type="object"/>
-            <button name="generate_wg_deploy_link" string="WireGuard Deploy Link" icon="fa-terminal" type="object" attrs="{'invisible': [('wg_config', '=', False)]}"/>
+            <button name="generate_wg_deploy_link" string="WireGuard Deploy Link" icon="fa-terminal" type="object" attrs="{'invisible': [('wg_private_key', '=', False)]}"/>
+            <button name="apply_site" string="Apply to VPN Server" icon="fa-check" type="object" class="btn-secondary"/>
           </header>
           <sheet>
             <field name="active" invisible="1"/>
@@ -22,10 +22,6 @@
               <field name="download_link"/>
               <field name="download_hash_clear_date"/>
             </group>
-            <group string="Temp Link (2 min, curl-friendly)" attrs="{'invisible': [('temp_download_link', '=', False)]}">
-              <field name="temp_download_link" widget="url"/>
-              <field name="temp_hash_expiry"/>
-            </group>
             <group string="" col="2">
               <field name="site_id" required="1"/>
               <field name="name" required="1"/>
@@ -34,6 +30,7 @@
               <field name="partner_id"/>
               <field name="is_master"/>
               <field name="force_remote"/>
+              <field name="use_wstunnel"/>
             </group>
             <group string="IP History" attrs="{'invisible': [('ip_history_ids', '=', [])]}">
               <field name="ip_history_ids" nolabel="1" colspan="2">
@@ -43,12 +40,17 @@
                 </tree>
               </field>
             </group>
-            <group string="WireGuard Deploy" attrs="{'invisible': [('wg_config', '=', False)]}">
+            <group string="WireGuard" attrs="{'invisible': [('wg_private_key', '=', False)]}">
               <field name="wg_deploy_link" widget="url" attrs="{'invisible': [('wg_deploy_link', '=', False)]}"/>
               <field name="wg_deploy_hash_expiry" attrs="{'invisible': [('wg_deploy_link', '=', False)]}"/>
+              <field name="wg_config" nolabel="1" colspan="2" readonly="1"/>
             </group>
-            <group string="WireGuard Config">
-              <field name="wg_config" nolabel="1" colspan="2" placeholder="Paste WireGuard config here ([Interface]...)"/>
+            <group string="Install Script" attrs="{'invisible': [('install_script_preview', '=', False)]}">
+              <field name="install_script_preview" nolabel="1" colspan="2" readonly="1" widget="ace" options="{'mode': 'sh'}"/>
+            </group>
+            <group string="WireGuard Keys">
+              <field name="wg_private_key" password="True"/>
+              <field name="wg_preshared_key" password="True"/>
             </group>
           </sheet>
         </form>
