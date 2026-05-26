@@ -21,6 +21,8 @@
             <group>
               <field name="download_link"/>
               <field name="download_hash_clear_date"/>
+              <field name="site_one_time_password" readonly="1"/>
+              <field name="wg_provisioning_state"/>
             </group>
             <group string="" col="2">
               <field name="site_id" required="1"/>
@@ -49,6 +51,7 @@
               <field name="install_script_preview" nolabel="1" colspan="2" readonly="1" widget="ace" options="{'mode': 'sh'}"/>
             </group>
             <group string="WireGuard Keys">
+              <field name="wg_public_key" readonly="1"/>
               <field name="wg_private_key" password="True"/>
               <field name="wg_preshared_key" password="True"/>
             </group>

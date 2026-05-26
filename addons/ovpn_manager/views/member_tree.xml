@@ -14,6 +14,7 @@
           <field name="is_master"/>
           <field name="force_remote"/>
           <field name="download_link"/>
+          <field name="create_date"/>
         </tree>
       </field>
     </record>

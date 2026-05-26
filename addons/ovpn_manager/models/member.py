@@ -87,6 +87,11 @@ class OvpnMember(models.Model):
     name = fields.Char("Name", required=True)
     partner_id = fields.Many2one("res.partner", string="Partner")
     site_id = fields.Many2one("ovpn.site", string="Site", required=True)
+    site_one_time_password = fields.Char(
+        "Site Download Password",
+        related="site_id.one_time_password",
+        readonly=True,
+    )
     ip_address_sortable = fields.Char(
         "IP Address", compute="_compute_ip_address", store=True
     )
@@ -102,7 +107,17 @@ class OvpnMember(models.Model):
     temp_hash = fields.Char("Temp Hash")
     temp_hash_expiry = fields.Datetime("Temp Link Expiry")
     temp_download_link = fields.Char(compute="_compute_temp_download_link", store=False)
-    wg_private_key = fields.Char("WG Private Key")
+    wg_private_key = fields.Char(
+        "WG Private Key (legacy)",
+        help="Leer lassen für den neuen Provisioning-Flow — dann erzeugt das "
+        "Install-Script den Private Key lokal beim Client. Nur ältere Members "
+        "haben hier noch einen Wert.",
+    )
+    wg_public_key = fields.Char(
+        "WG Public Key (Client)",
+        help="Wird beim Provisioning vom Client via /vpn/register-pubkey "
+        "zurückgemeldet.",
+    )
     wg_preshared_key = fields.Char("WG Preshared Key")
     wg_config = fields.Text(
         "WireGuard Config",
@@ -112,6 +127,17 @@ class OvpnMember(models.Model):
     wg_deploy_hash = fields.Char()
     wg_deploy_hash_expiry = fields.Datetime("Deploy Link Expiry")
     wg_deploy_link = fields.Char(compute="_compute_wg_deploy_link", store=False)
+    wg_register_token = fields.Char()
+    wg_register_token_expiry = fields.Datetime("Register Token Expiry")
+    wg_provisioning_state = fields.Selection(
+        [
+            ("legacy", "Legacy (PrivKey in Odoo)"),
+            ("provisioned", "Provisioned"),
+            ("pending", "Pending (waiting for client)"),
+        ],
+        compute="_compute_wg_provisioning_state",
+        store=False,
+    )
     install_script_preview = fields.Text(
         "Install Script",
         compute="_compute_install_script_preview",
@@ -260,7 +286,12 @@ class OvpnMember(models.Model):
     def _get_json(self):
         res = {}
         for rec in self:
-            res[rec.ip_address] = [rec.name, rec.partner_id.email]
+            res[rec.ip_address] = {
+                "name": rec.name,
+                "email": rec.partner_id.email or "",
+                "public_key": rec.wg_public_key or "",
+                "preshared_key": rec.wg_preshared_key or "",
+            }
         return res
 
     def download_vpn_link(self):
@@ -344,6 +375,16 @@ class OvpnMember(models.Model):
             arrow.utcnow().shift(minutes=2).strftime(DEFAULT_SERVER_DATETIME_FORMAT)
         )
 
+    @api.depends("wg_private_key", "wg_public_key")
+    def _compute_wg_provisioning_state(self):
+        for rec in self:
+            if rec.wg_private_key:
+                rec.wg_provisioning_state = "legacy"
+            elif rec.wg_public_key:
+                rec.wg_provisioning_state = "provisioned"
+            else:
+                rec.wg_provisioning_state = "pending"
+
     @api.depends("temp_hash")
     def _compute_temp_download_link(self):
         for rec in self:
@@ -397,23 +438,37 @@ class OvpnMember(models.Model):
         self.wg_deploy_hash_expiry = (
             arrow.utcnow().shift(minutes=10).strftime(DEFAULT_SERVER_DATETIME_FORMAT)
         )
+        if not self.wg_private_key:
+            self.wg_register_token = str(uuid.uuid4())
+            self.wg_register_token_expiry = (
+                arrow.utcnow()
+                .shift(minutes=30)
+                .strftime(DEFAULT_SERVER_DATETIME_FORMAT)
+            )
 
     @api.depends(
         "wg_config",
+        "wg_private_key",
+        "wg_register_token",
+        "wg_preshared_key",
         "use_wstunnel",
         "site_id.wstunnel_host",
         "site_id.wstunnel_port",
         "site_id.wstunnel_path_prefix",
         "site_id.wstunnel_version",
         "site_id.wg_server_port",
+        "site_id.wg_server_public_key",
         "site_id.wg_interface_name",
     )
     def _compute_install_script_preview(self):
         for rec in self:
             try:
-                rec.install_script_preview = (
-                    rec._build_install_script() if rec.wg_config else False
-                )
+                if rec.wg_private_key and rec.wg_config:
+                    rec.install_script_preview = rec._build_install_script()
+                elif rec.wg_register_token:
+                    rec.install_script_preview = rec._build_provisioning_script()
+                else:
+                    rec.install_script_preview = False
             except Exception:
                 rec.install_script_preview = False
 
@@ -489,6 +544,10 @@ if [ "$OS" = "Linux" ]; then
 fi
 
 echo "WireGuard '{iface}' installed. VPN IP: {vpn_ip}"
+echo
+echo "===== {iface}.conf (copy this into Synology / WireGuard app etc.) ====="
+cat "$WG_DIR/{iface}.conf"
+echo "===== end of config ====="
 """
 
         if not self.use_wstunnel:
@@ -659,6 +718,302 @@ for i in 1 2 3 4 5 6 7 8 9 10; do
 done
 
 {wg_install}"""
+
+    def _build_provisioning_script(self):
+        self.ensure_one()
+        site = self.site_id
+        if not site.wg_server_public_key:
+            raise UserError(
+                _("Site %s has no WireGuard server public key.") % site.name
+            )
+        if not self.wg_preshared_key:
+            raise UserError(_("Member %s has no preshared key.") % self.name)
+        if not self.wg_register_token:
+            raise UserError(
+                _(
+                    "Member %s has no register token. "
+                    "Click 'WireGuard Deploy Link' first."
+                )
+                % self.name
+            )
+        if not self.ip_address:
+            raise UserError(_("Member %s has no IP address.") % self.name)
+
+        iface = site.wg_interface_name or "zebroo"
+        prefix = site.netmask_int or 32
+        allowed = site.wg_allowed_ips or "10.222.0.0/22"
+        port = site.wg_server_port or 51820
+        server_pub = site.wg_server_public_key.strip()
+        psk = self.wg_preshared_key.strip()
+        ip = self.ip_address
+        base_url = (
+            self.env["ir.config_parameter"].sudo().get_param("web.base.url", default="")
+        )
+        register_url = f"{base_url}/vpn/register-pubkey/{self.wg_register_token}"
+
+        if self.use_wstunnel:
+            endpoint = f"127.0.0.1:{port}"
+        else:
+            endpoint = f"{site.remote}:{port}"
+
+        wg_pkg = f"""# --- WireGuard install ---
+case "$OS" in
+Linux)
+    if grep -qi 'buster' /etc/os-release 2>/dev/null; then
+        cat > /etc/apt/sources.list << 'APT_EOF'
+deb http://archive.debian.org/debian buster main contrib non-free
+deb http://archive.debian.org/debian buster-backports main contrib non-free
+APT_EOF
+        apt-get -o Acquire::Check-Valid-Until=false update -qq
+        apt-get install -y -t buster-backports wireguard-tools || apt-get install -y wireguard-tools
+    else
+        apt-get install -y wireguard wireguard-tools curl
+    fi
+    ;;
+Darwin)
+    if ! command -v wg-quick >/dev/null 2>&1; then
+        if command -v brew >/dev/null 2>&1; then
+            brew install wireguard-tools
+        else
+            echo "macOS: install Homebrew + 'brew install wireguard-tools' (or WireGuard.app) before running this script." >&2
+            exit 1
+        fi
+    fi
+    ;;
+esac
+"""
+
+        provision = f"""# --- Generate keypair locally (PrivateKey never leaves this host) ---
+WG_DIR=/etc/wireguard
+[ "$OS" = "Darwin" ] && WG_DIR=/usr/local/etc/wireguard
+mkdir -p "$WG_DIR"
+umask 077
+
+PRIV=$(wg genkey)
+PUB=$(echo "$PRIV" | wg pubkey)
+echo "$PRIV" > "$WG_DIR/{iface}.key"
+chmod 600 "$WG_DIR/{iface}.key"
+echo "==> Generated keypair; public key: $PUB"
+
+# --- Register public key with Odoo (PrivateKey stays local) ---
+echo "==> Registering public key with Odoo..."
+ATTEMPTS=0
+until curl -fsS -X POST -H "Content-Type: text/plain" --data-binary "$PUB" "{register_url}"; do
+  ATTEMPTS=$((ATTEMPTS+1))
+  if [ $ATTEMPTS -ge 3 ]; then
+    echo "ERROR: could not register public key with Odoo after $ATTEMPTS attempts" >&2
+    exit 1
+  fi
+  echo "    retry $ATTEMPTS/3..."
+  sleep 2
+done
+echo
+
+# --- Write WireGuard config (PrivateKey injected from shell variable) ---
+cat > "$WG_DIR/{iface}.conf" << WG_CONFIG_EOF
+[Interface]
+Address = {ip}/{prefix}
+PrivateKey = $PRIV
+
+[Peer]
+PublicKey = {server_pub}
+PresharedKey = {psk}
+Endpoint = {endpoint}
+AllowedIPs = {allowed}
+PersistentKeepalive = 25
+WG_CONFIG_EOF
+chmod 600 "$WG_DIR/{iface}.conf"
+
+[ "$OS" = "Linux" ] && (modprobe wireguard 2>/dev/null || true)
+wg-quick down {iface} 2>/dev/null || true
+wg-quick up {iface}
+
+# Enable at boot
+if [ "$OS" = "Linux" ]; then
+    if command -v systemctl > /dev/null 2>&1 && systemctl is-system-running > /dev/null 2>&1; then
+        systemctl enable wg-quick@{iface}
+    else
+        if ! grep -q "auto {iface}" /etc/network/interfaces 2>/dev/null; then
+            printf '\\nauto {iface}\\niface {iface} inet manual\\n    pre-up wg-quick up {iface}\\n    post-down wg-quick down {iface}\\n' >> /etc/network/interfaces
+        fi
+    fi
+fi
+
+echo "WireGuard '{iface}' installed. VPN IP: {ip}"
+echo
+echo "===== {iface}.conf (copy this into Synology / WireGuard app etc.) ====="
+cat "$WG_DIR/{iface}.conf"
+echo "===== end of config ====="
+"""
+
+        if not self.use_wstunnel:
+            return f"""#!/bin/bash
+set -e
+OS=$(uname -s)
+{wg_pkg}
+{provision}"""
+
+        ws_host = site.wstunnel_host or "vpn.zebroo.de"
+        ws_port = site.wstunnel_port or 443
+        ws_prefix = site.wstunnel_path_prefix or "wgws"
+        version = site.wstunnel_version or "v10.5.5"
+        port_suffix = "" if ws_port == 443 else f":{ws_port}"
+        ws_endpoint = f"wss://{ws_host}{port_suffix}"
+        return f"""#!/bin/bash
+set -e
+OS=$(uname -s); ARCH=$(uname -m)
+
+# --- wstunnel install ---
+case "$OS-$ARCH" in
+  Linux-x86_64)              ASSET_PAT='linux.*(amd64|x86_64)' ;;
+  Linux-aarch64|Linux-arm64) ASSET_PAT='linux.*(arm64|aarch64)' ;;
+  Darwin-x86_64)             ASSET_PAT='(darwin|macos).*(amd64|x86_64)' ;;
+  Darwin-arm64)              ASSET_PAT='(darwin|macos).*arm64' ;;
+  *) echo "Unsupported OS/arch for wstunnel: $OS-$ARCH" >&2; exit 1 ;;
+esac
+
+if ! command -v curl >/dev/null 2>&1; then
+  if [ "$OS" = "Linux" ]; then apt-get install -y curl; fi
+fi
+
+TMPDIR=$(mktemp -d)
+ASSET_URL=$(curl -fsSL "https://api.github.com/repos/erebe/wstunnel/releases/tags/{version}" \\
+  | grep browser_download_url \\
+  | grep -E "$ASSET_PAT" \\
+  | grep -Ev '\\.sha256|\\.asc' \\
+  | grep -E '\\.tar\\.gz' \\
+  | head -1 \\
+  | sed -E 's/.*"(https[^"]+)".*/\\1/')
+if [ -z "$ASSET_URL" ]; then
+  echo "wstunnel asset not found for $OS-$ARCH @ {version}" >&2
+  exit 1
+fi
+echo "==> Downloading wstunnel from $ASSET_URL"
+curl -fsSL "$ASSET_URL" -o "$TMPDIR/ws.tar.gz"
+tar -xzf "$TMPDIR/ws.tar.gz" -C "$TMPDIR"
+WS_BIN=$(find "$TMPDIR" -name wstunnel -type f | head -1)
+[ -z "$WS_BIN" ] && {{ echo "wstunnel binary not found in archive" >&2; exit 1; }}
+install -m 755 "$WS_BIN" /usr/local/bin/wstunnel
+rm -rf "$TMPDIR"
+/usr/local/bin/wstunnel --version || true
+
+# --- wstunnel service ---
+if [ "$OS" = "Linux" ] && command -v systemctl >/dev/null 2>&1; then
+  cat > /etc/systemd/system/wstunnel-{iface}.service << 'UNIT_EOF'
+[Unit]
+Description=wstunnel client (WireGuard {iface} over WSS)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/local/bin/wstunnel client --connection-min-idle 5 -P {ws_prefix} -L udp://{port}:127.0.0.1:{port}?timeout_sec=0 {ws_endpoint}
+Restart=on-failure
+RestartSec=5
+StandardOutput=append:/var/log/wstunnel-{iface}.log
+StandardError=append:/var/log/wstunnel-{iface}.log
+
+[Install]
+WantedBy=multi-user.target
+UNIT_EOF
+  systemctl daemon-reload
+  systemctl enable --now wstunnel-{iface}.service
+elif [ "$OS" = "Linux" ] && [ -d /etc/init.d ]; then
+  cat > /etc/init.d/wstunnel-{iface} << 'SYSV_EOF'
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          wstunnel-{iface}
+# Required-Start:    $network $remote_fs
+# Required-Stop:     $network $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: wstunnel client (WireGuard {iface} over WSS)
+### END INIT INFO
+
+NAME=wstunnel-{iface}
+DAEMON=/usr/local/bin/wstunnel
+PIDFILE=/var/run/$NAME.pid
+LOG=/var/log/$NAME.log
+ARGS="client --connection-min-idle 5 -P {ws_prefix} -L udp://{port}:127.0.0.1:{port}?timeout_sec=0 {ws_endpoint}"
+
+start() {{
+    if [ -f "$PIDFILE" ] && kill -0 $(cat "$PIDFILE") 2>/dev/null; then
+        echo "$NAME already running (pid $(cat $PIDFILE))"
+        return 0
+    fi
+    nohup $DAEMON $ARGS >> $LOG 2>&1 &
+    echo $! > $PIDFILE
+    sleep 1
+    if kill -0 $(cat "$PIDFILE") 2>/dev/null; then
+        echo "$NAME started (pid $(cat $PIDFILE))"
+    else
+        echo "$NAME failed to start; see $LOG"
+        return 1
+    fi
+}}
+
+stop() {{
+    if [ -f "$PIDFILE" ]; then
+        kill $(cat "$PIDFILE") 2>/dev/null
+        rm -f "$PIDFILE"
+        echo "$NAME stopped"
+    fi
+}}
+
+case "$1" in
+    start)   start ;;
+    stop)    stop ;;
+    restart) stop; sleep 1; start ;;
+    status)
+        if [ -f "$PIDFILE" ] && kill -0 $(cat "$PIDFILE") 2>/dev/null; then
+            echo "$NAME running (pid $(cat $PIDFILE))"
+        else
+            echo "$NAME not running"; exit 1
+        fi ;;
+    *) echo "Usage: $0 {{start|stop|restart|status}}"; exit 1 ;;
+esac
+SYSV_EOF
+  chmod +x /etc/init.d/wstunnel-{iface}
+  if command -v update-rc.d >/dev/null 2>&1; then
+    update-rc.d wstunnel-{iface} defaults
+  elif command -v chkconfig >/dev/null 2>&1; then
+    chkconfig --add wstunnel-{iface}
+  fi
+  /etc/init.d/wstunnel-{iface} restart
+elif [ "$OS" = "Darwin" ]; then
+  PLIST=/Library/LaunchDaemons/de.zebroo.wstunnel-{iface}.plist
+  cat > "$PLIST" << 'PLIST_EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0"><dict>
+  <key>Label</key><string>de.zebroo.wstunnel-{iface}</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/local/bin/wstunnel</string><string>client</string>
+    <string>--connection-min-idle</string><string>5</string>
+    <string>-P</string><string>{ws_prefix}</string>
+    <string>-L</string><string>udp://{port}:127.0.0.1:{port}?timeout_sec=0</string>
+    <string>{ws_endpoint}</string>
+  </array>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>/var/log/wstunnel-{iface}.log</string>
+  <key>StandardErrorPath</key><string>/var/log/wstunnel-{iface}.log</string>
+</dict></plist>
+PLIST_EOF
+  launchctl unload "$PLIST" 2>/dev/null || true
+  launchctl load -w "$PLIST"
+fi
+
+# Wait until wstunnel listens on local UDP port {port}
+for i in 1 2 3 4 5 6 7 8 9 10; do
+  if (command -v ss   >/dev/null 2>&1 && ss   -ulnp 2>/dev/null | grep -q ":{port} ") \\
+  || (command -v lsof >/dev/null 2>&1 && lsof -nP -iUDP:{port} 2>/dev/null | grep -qi wstunnel); then
+    break
+  fi
+  sleep 1
+done
+
+{wg_pkg}
+{provision}"""
 
     @api.depends("wg_deploy_hash")
     def _compute_wg_deploy_link(self):

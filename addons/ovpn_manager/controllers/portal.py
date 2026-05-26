@@ -1,12 +1,18 @@
 from odoo import http, _
 import base64
+import binascii
 import arrow
+import logging
+import uuid
 from odoo.http import request, content_disposition
 from odoo.osv import expression
 from odoo.addons.portal.controllers.portal import CustomerPortal, pager as portal_pager
 from odoo.exceptions import AccessError, MissingError
+from odoo.tools import DEFAULT_SERVER_DATETIME_FORMAT
 from collections import OrderedDict
 from odoo.http import request
+
+_logger = logging.getLogger(__name__)
 
 
 class PortalAccount(CustomerPortal):
@@ -30,7 +36,31 @@ class PortalAccount(CustomerPortal):
         if request.httprequest.method == "POST":
             password = kw.get("password", "")
             if site.one_time_password and password == site.one_time_password:
-                if member.wg_config:
+                if not member.wg_private_key:
+                    if not site.wg_server_public_key or not member.wg_preshared_key:
+                        return http.request.make_response(
+                            "Member not ready: missing server public key or "
+                            "preshared key.\n",
+                            status=400,
+                            headers=[("Content-Type", "text/plain; charset=utf-8")],
+                        )
+                    if (
+                        not member.wg_register_token
+                        or not member.wg_register_token_expiry
+                        or member.wg_register_token_expiry < arrow.utcnow().naive
+                    ):
+                        member.wg_register_token = str(uuid.uuid4())
+                        member.wg_register_token_expiry = (
+                            arrow.utcnow()
+                            .shift(minutes=30)
+                            .strftime(DEFAULT_SERVER_DATETIME_FORMAT)
+                        )
+                    script = member._build_provisioning_script()
+                    return http.request.make_response(
+                        script,
+                        headers=[("Content-Type", "text/plain; charset=utf-8")],
+                    )
+                if member.wg_config and not site.download_plain_conf:
                     iface = site.wg_interface_name or "zebroo"
                     config = member.wg_config.strip()
                     vpn_ip = member.ip_address
@@ -105,7 +135,7 @@ echo "WireGuard '{iface}' installed. VPN IP: {vpn_ip}"
         member = (
             request.env["ovpn.member"].sudo().search([("wg_deploy_hash", "=", hash)])
         )
-        if not member or not member.wg_config:
+        if not member:
             return request.not_found()
         if (
             not member.wg_deploy_hash_expiry
@@ -113,11 +143,72 @@ echo "WireGuard '{iface}' installed. VPN IP: {vpn_ip}"
         ):
             return request.not_found()
 
-        script = member._build_install_script()
+        if member.wg_private_key:
+            if not member.wg_config:
+                return request.not_found()
+            script = member._build_install_script()
+        else:
+            if (
+                not member.site_id.wg_server_public_key
+                or not member.wg_preshared_key
+                or not member.wg_register_token
+            ):
+                return request.not_found()
+            script = member._build_provisioning_script()
+
         member.wg_deploy_hash = False
         member.wg_deploy_hash_expiry = False
         return http.request.make_response(
             script,
+            headers=[("Content-Type", "text/plain; charset=utf-8")],
+        )
+
+    @http.route(
+        ["/vpn/register-pubkey/<token>"],
+        type="http",
+        auth="none",
+        methods=["POST"],
+        csrf=False,
+    )
+    def register_pubkey(self, token=None, **kw):
+        member = (
+            request.env["ovpn.member"]
+            .sudo()
+            .search([("wg_register_token", "=", token)], limit=1)
+        )
+        if not member:
+            return request.not_found()
+        if (
+            not member.wg_register_token_expiry
+            or member.wg_register_token_expiry < arrow.utcnow().naive
+        ):
+            return request.not_found()
+
+        raw = request.httprequest.get_data(cache=False, as_text=False) or b""
+        if len(raw) > 64:
+            return http.request.make_response("invalid public key length\n", status=400)
+        pubkey = raw.decode("ascii", errors="replace").strip()
+        try:
+            decoded = base64.b64decode(pubkey, validate=True)
+        except (binascii.Error, ValueError):
+            return http.request.make_response("invalid base64\n", status=400)
+        if len(decoded) != 32:
+            return http.request.make_response(
+                "public key must be 32 bytes\n", status=400
+            )
+
+        member.wg_public_key = pubkey
+        member.wg_register_token = False
+        member.wg_register_token_expiry = False
+        try:
+            member.site_id.generate_json()
+        except Exception:
+            _logger.exception(
+                "register-pubkey: settings.json regeneration failed for member %s",
+                member.id,
+            )
+        return http.request.make_response(
+            "OK\n",
             headers=[("Content-Type", "text/plain; charset=utf-8")],
         )
 

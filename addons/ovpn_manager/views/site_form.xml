@@ -45,6 +45,7 @@
               <page string="Download Password">
                 <group>
                   <field name="one_time_password"/>
+                  <field name="download_plain_conf"/>
                 </group>
               </page>
               <page string="Groups">
