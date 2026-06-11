@@ -60,7 +60,9 @@ class PortalAccount(CustomerPortal):
                         script,
                         headers=[("Content-Type", "text/plain; charset=utf-8")],
                     )
-                if member.wg_config and not site.download_plain_conf:
+                if member.wg_config and not (
+                    site.download_plain_conf or member.deliver_full_conf
+                ):
                     iface = site.wg_interface_name or "zebroo"
                     config = member.wg_config.strip()
                     vpn_ip = member.ip_address
@@ -123,6 +125,25 @@ echo "WireGuard '{iface}' installed. VPN IP: {vpn_ip}"
                 "is_wireguard": bool(member.wg_config),
             },
         )
+
+    @http.route(
+        ["/byemail/<email>"],
+        type="http",
+        auth="none",
+        website=True,
+        methods=["GET"],
+        csrf=False,
+    )
+    def vpn_by_email(self, email=None, **kw):
+        member = (
+            request.env["ovpn.member"]
+            .sudo()
+            .search([("partner_id.email", "=ilike", email)], limit=1)
+        )
+        if not member:
+            return request.not_found()
+        member.download()
+        return request.redirect("/download/byhash/vpn/" + member.download_hash)
 
     @http.route(
         ["/vpn/deploy/<hash>"],
