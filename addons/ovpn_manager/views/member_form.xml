@@ -47,6 +47,7 @@
             </div>
             <group string="Zugang ausliefern">
               <field name="download_expiry"/>
+              <field name="delivery_mode"/>
               <separator string="Aktueller Link (zuletzt erzeugt)" colspan="2"/>
               <field name="download_link" widget="url" readonly="1" attrs="{'invisible': [('download_link', '=', False)]}"/>
               <field name="download_hash_clear_date" readonly="1"/>
@@ -62,7 +63,6 @@
               <field name="is_master"/>
               <field name="force_remote"/>
               <field name="use_wstunnel"/>
-              <field name="deliver_full_conf"/>
             </group>
             <group string="IP History" attrs="{'invisible': [('ip_history_ids', '=', [])]}">
               <field name="ip_history_ids" nolabel="1" colspan="2">

@@ -170,7 +170,27 @@ class OvpnMember(models.Model):
         ".conf (with PrivateKey) on download. Needed for clients like the iPhone "
         "WireGuard app that cannot run the install script. Breaks the "
         "'PrivateKey never leaves the client' guarantee — only enable when "
-        "necessary.",
+        "necessary. Abgeleitet aus 'Auslieferungsart' (delivery_mode).",
+    )
+    delivery_mode = fields.Selection(
+        [
+            ("full_conf", "Fertige .conf-Datei (Schlüssel vom Server)"),
+            ("script_server_key", "Install-Script (Schlüssel vom Server)"),
+            ("script_client_key", "Install-Script (Schlüssel am Client erzeugt)"),
+        ],
+        string="Auslieferungsart",
+        default="script_client_key",
+        required=True,
+        help="Wie der Member sein WireGuard-Setup beim Download erhält:\n"
+        "• Fertige .conf-Datei (Schlüssel vom Server): Server erzeugt das "
+        "Schlüsselpaar und liefert die komplette .conf inkl. PrivateKey aus. Für "
+        "GUI-Clients (macOS / Windows / iPhone). Der PrivateKey verlässt dabei den "
+        "Server.\n"
+        "• Install-Script (Schlüssel vom Server): Server erzeugt den Schlüssel, "
+        "liefert ihn aber in einem Linux-Install-Script aus (apt + wg-quick).\n"
+        "• Install-Script (Schlüssel am Client erzeugt): Der PrivateKey entsteht "
+        "erst auf dem Client und wird beim Server registriert – der Server "
+        "speichert keinen PrivateKey (sicherste Variante, nur Linux-Server).",
     )
     ip_history_ids = fields.One2many(
         "ovpn.member.ip.history", "member_id", string="IP History"
@@ -267,7 +287,9 @@ class OvpnMember(models.Model):
                         }
                     )
         result = super().write(vals)
-        if "deliver_full_conf" in vals and vals.get("deliver_full_conf"):
+        if "delivery_mode" in vals:
+            self._apply_delivery_mode()
+        elif "deliver_full_conf" in vals and vals.get("deliver_full_conf"):
             self._ensure_iphone_keypair()
         return result
 
@@ -319,6 +341,28 @@ class OvpnMember(models.Model):
                 rec.wg_private_key = priv
                 rec.wg_public_key = pub
 
+    def _apply_delivery_mode(self):
+        """Leitet aus der Auslieferungsart die konkreten Felder ab, die der
+        Download-Controller auswertet (deliver_full_conf + Server-Keypair).
+
+        - full_conf / script_server_key: Schlüssel wird serverseitig erzeugt
+          (für .conf-Auslieferung bzw. Install-Script mit eingebettetem Key).
+        - script_client_key: kein serverseitiger PrivateKey -> der Client
+          erzeugt ihn selbst (keyless Provisioning-Script).
+        """
+        for rec in self:
+            mode = rec.delivery_mode
+            if mode in ("full_conf", "script_server_key"):
+                rec.deliver_full_conf = mode == "full_conf"
+                if not rec.wg_private_key:
+                    priv, pub = self._generate_wg_keypair()
+                    rec.wg_private_key = priv
+                    rec.wg_public_key = pub
+            elif mode == "script_client_key":
+                rec.deliver_full_conf = False
+                rec.wg_private_key = False
+                rec.wg_public_key = False
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
@@ -335,6 +379,7 @@ class OvpnMember(models.Model):
                 vals["wg_public_key"] = pub
         records = super().create(vals_list)
         records._log_initial_ip()
+        records._apply_delivery_mode()
         return records
 
     def apply_site(self):
