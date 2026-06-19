@@ -16,11 +16,19 @@
             <div class="alert alert-info" role="alert">
               <p>
                 Der Button <b>Download</b> oben erzeugt einen frischen, einmaligen
-                Zugangs-Link. Dar&#xFC;ber zieht der Member sein WireGuard-Setup
-                &#x2013; je nach Member-Typ als fertige <b>.conf</b>
-                (GUI-Clients: macOS / Windows / iPhone) oder als
-                <b>Install-Script</b> (Linux-Server).
+                Zugangs-Link &#x2013; je nach <b>Auslieferungsart</b> unterschiedlich:
               </p>
+              <ul>
+                <li><b>Fertige .conf-Datei</b> (GUI-Clients: macOS / Windows / iPhone):
+                  &#xF6;ffnet den Download-Dialog im Browser, &#xFC;ber den die
+                  fertige <b>.conf</b> geladen wird.
+                </li>
+                <li><b>Install-Script</b> (Linux-Server): es wird <i>kein</i>
+                  Download-Dialog ge&#xF6;ffnet, sondern nur der <b>lesbare Link</b>
+                  unten angezeigt. Diesen auf den Ziel-Server kopieren und dort per
+                  <code>curl &lt;link&gt; | bash</code> ausf&#xFC;hren.
+                </li>
+              </ul>
               <ul class="mb-0">
                 <li><b>Ablaufdatum vorgeben</b> (optional, <i>Eingabe</i>):
                   Wunsch-Ablauf f&#xFC;r den <i>n&#xE4;chsten</i> Link. Leer lassen

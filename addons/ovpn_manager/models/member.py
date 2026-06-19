@@ -425,6 +425,21 @@ class OvpnMember(models.Model):
                 .shift(minutes=expiration_minutes)
                 .strftime(DEFAULT_SERVER_DATETIME_FORMAT)
             )
+        if self.delivery_mode in ("script_server_key", "script_client_key"):
+            # Install-Script-Auslieferung: keinen Browser-Download/Dialog
+            # öffnen, sondern nur den frischen, lesbaren Link erzeugen und
+            # anzeigen – den kopiert man auf den Ziel-Server (curl … | bash).
+            return {
+                "type": "ir.actions.client",
+                "tag": "display_notification",
+                "params": {
+                    "title": _("Download-Link erzeugt"),
+                    "message": self.download_link,
+                    "type": "success",
+                    "sticky": True,
+                    "next": {"type": "ir.actions.client", "tag": "reload"},
+                },
+            }
         return {
             "type": "ir.actions.act_url",
             "url": self.download_vpn_link(),
