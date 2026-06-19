@@ -126,6 +126,14 @@ class OvpnMember(models.Model):
     )
     wg_deploy_hash = fields.Char()
     wg_deploy_hash_expiry = fields.Datetime("Deploy Link Expiry")
+    wg_deploy_expiry = fields.Datetime(
+        "Deploy Link gültig bis (gewünscht)",
+        help="Optionales Ablaufdatum für den nächsten Deploy-Link. Ist hier ein "
+        "(zukünftiges) Datum gesetzt, gilt der beim Klick auf 'WireGuard Deploy "
+        "Link' erzeugte Link bis zu diesem Zeitpunkt. Bleibt das Feld leer, wird "
+        "die Standard-Gültigkeitsdauer aus dem Systemparameter "
+        "'ovpn.wg_deploy_hash_expiration_time' (Minuten, Default 10) verwendet.",
+    )
     wg_deploy_link = fields.Char(compute="_compute_wg_deploy_link", store=False)
     wg_register_token = fields.Char()
     wg_register_token_expiry = fields.Datetime("Register Token Expiry")
@@ -150,6 +158,14 @@ class OvpnMember(models.Model):
     use_wstunnel = fields.Boolean(
         "Use wstunnel (TCP/443)",
         help="Tunnel WG over WSS via wstunnel — for clients whose firewall blocks UDP.",
+    )
+    deliver_full_conf = fields.Boolean(
+        "Deliver full .conf (iPhone)",
+        help="Generate a keypair server-side and deliver the complete WireGuard "
+        ".conf (with PrivateKey) on download. Needed for clients like the iPhone "
+        "WireGuard app that cannot run the install script. Breaks the "
+        "'PrivateKey never leaves the client' guarantee — only enable when "
+        "necessary.",
     )
     ip_history_ids = fields.One2many(
         "ovpn.member.ip.history", "member_id", string="IP History"
@@ -245,7 +261,10 @@ class OvpnMember(models.Model):
                             "change_date": fields.Datetime.now(),
                         }
                     )
-        return super().write(vals)
+        result = super().write(vals)
+        if "deliver_full_conf" in vals and vals.get("deliver_full_conf"):
+            self._ensure_iphone_keypair()
+        return result
 
     def _log_initial_ip(self):
         for rec in self:
@@ -265,6 +284,36 @@ class OvpnMember(models.Model):
 
         return base64.b64encode(secrets.token_bytes(32)).decode()
 
+    @staticmethod
+    def _generate_wg_keypair():
+        from cryptography.hazmat.primitives.asymmetric.x25519 import (
+            X25519PrivateKey,
+        )
+        from cryptography.hazmat.primitives import serialization
+        import base64
+
+        priv_obj = X25519PrivateKey.generate()
+        priv_bytes = priv_obj.private_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PrivateFormat.Raw,
+            encryption_algorithm=serialization.NoEncryption(),
+        )
+        pub_bytes = priv_obj.public_key().public_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PublicFormat.Raw,
+        )
+        return (
+            base64.b64encode(priv_bytes).decode(),
+            base64.b64encode(pub_bytes).decode(),
+        )
+
+    def _ensure_iphone_keypair(self):
+        for rec in self:
+            if rec.deliver_full_conf and not rec.wg_private_key:
+                priv, pub = self._generate_wg_keypair()
+                rec.wg_private_key = priv
+                rec.wg_public_key = pub
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
@@ -275,6 +324,10 @@ class OvpnMember(models.Model):
                     vals["ip_address"] = site._next_ip()
             if not vals.get("wg_preshared_key"):
                 vals["wg_preshared_key"] = self._generate_psk()
+            if vals.get("deliver_full_conf") and not vals.get("wg_private_key"):
+                priv, pub = self._generate_wg_keypair()
+                vals["wg_private_key"] = priv
+                vals["wg_public_key"] = pub
         records = super().create(vals_list)
         records._log_initial_ip()
         return records
@@ -336,6 +389,62 @@ class OvpnMember(models.Model):
     def _get_content(self):
         self.ensure_one()
         return self.wg_config.encode("utf-8")
+
+    def _wstunnel_params(self):
+        """(wss_endpoint, http_upgrade_path_prefix, wstunnel_version) for the site."""
+        site = self.site_id
+        host = site.wstunnel_host or "vpn.zebroo.de"
+        ws_port = site.wstunnel_port or 443
+        prefix = site.wstunnel_path_prefix or "wgws"
+        version = site.wstunnel_version or "v10.5.5"
+        port_suffix = "" if ws_port == 443 else f":{ws_port}"
+        return f"wss://{host}{port_suffix}", prefix, version
+
+    def _wg_endpoint_port(self, config):
+        """WG server port read from a config's Endpoint line (what the server
+        actually listens on); falls back to the site default."""
+        m = re.search(r"(?m)^Endpoint = [^:\s]+:(\d+)", config)
+        return int(m.group(1)) if m else (self.site_id.wg_server_port or 51820)
+
+    def _endpoint_to_localhost(self, config, port):
+        """Point the WG Endpoint at the local wstunnel listener (127.0.0.1)."""
+        line = f"Endpoint = 127.0.0.1:{port}"
+        if re.search(r"(?m)^Endpoint = .*$", config):
+            return re.sub(r"(?m)^Endpoint = .*$", line, config)
+        # No Endpoint line (shouldn't happen — _compute_wg_config always adds one);
+        # append one so the result stays a valid tunnel config.
+        return config.rstrip() + "\n" + line + "\n"
+
+    def _get_tcp_content(self):
+        """WireGuard config for the TCP/WSS (wstunnel) mode.
+
+        Same config as _get_content but the Endpoint points at the local
+        wstunnel client (127.0.0.1) instead of the server. A comment header
+        documents the wstunnel command so a GUI user knows what to run.
+        Slower than plain UDP, but gets through hotel / captive networks
+        that only allow TCP 443.
+        """
+        self.ensure_one()
+        if not self.wg_config:
+            raise UserError(_("Member %s has no WireGuard config yet.") % self.name)
+        config = self.wg_config.strip()
+        port = self._wg_endpoint_port(config)
+        tcp_config = self._endpoint_to_localhost(config, port)
+        endpoint, prefix, version = self._wstunnel_params()
+        header = (
+            "# === TCP / WSS mode (WireGuard over TLS, port 443) ===\n"
+            "# Slower, but works through restrictive networks (hotels, captive\n"
+            "# portals) that only allow TCP 443. Requires the wstunnel client\n"
+            "# running locally before this tunnel is activated:\n"
+            "#\n"
+            f"#   wstunnel client --connection-min-idle 5 -P {prefix} \\\n"
+            f"#     -L udp://{port}:127.0.0.1:{port}?timeout_sec=0 {endpoint}\n"
+            "#\n"
+            f"# Install wstunnel ({version}): https://github.com/erebe/wstunnel/releases\n"
+            "# (macOS: brew install wstunnel). Start it, then activate this tunnel.\n"
+            "#\n"
+        )
+        return (header + tcp_config + "\n").encode("utf-8")
 
     @api.model
     def default_get(self, fields):
@@ -400,6 +509,8 @@ class OvpnMember(models.Model):
 
     @api.depends(
         "wg_private_key",
+        "wg_public_key",
+        "wg_preshared_key",
         "ip_address",
         "site_id.wg_server_public_key",
         "site_id.wg_server_port",
@@ -420,6 +531,14 @@ class OvpnMember(models.Model):
             prefix = rec.site_id.netmask_int or 32
             allowed = rec.site_id.wg_allowed_ips or "10.222.0.0/22"
             port = rec.site_id.wg_server_port or 51820
+            # PSK is only emitted when the member has a wg_public_key — that's
+            # the marker for "server-side peer config also carries PSK"
+            # (apply-clients.py adds PresharedKey to wg1.conf [Peer] only when
+            # public_key is present in settings.json). Pure legacy members
+            # (no wg_public_key) get the historical, PSK-less config.
+            psk_line = ""
+            if rec.wg_public_key and rec.wg_preshared_key:
+                psk_line = f"PresharedKey = {rec.wg_preshared_key.strip()}\n"
             rec.wg_config = (
                 f"[Interface]\n"
                 f"Address = {rec.ip_address}/{prefix}\n"
@@ -427,6 +546,7 @@ class OvpnMember(models.Model):
                 f"\n"
                 f"[Peer]\n"
                 f"PublicKey = {rec.site_id.wg_server_public_key.strip()}\n"
+                f"{psk_line}"
                 f"Endpoint = {rec.site_id.remote}:{port}\n"
                 f"AllowedIPs = {allowed}\n"
                 f"PersistentKeepalive = 25"
@@ -435,9 +555,20 @@ class OvpnMember(models.Model):
     def generate_wg_deploy_link(self):
         self.ensure_one()
         self.wg_deploy_hash = self._generate_temp_hash()
-        self.wg_deploy_hash_expiry = (
-            arrow.utcnow().shift(minutes=10).strftime(DEFAULT_SERVER_DATETIME_FORMAT)
-        )
+        if self.wg_deploy_expiry and self.wg_deploy_expiry > fields.Datetime.now():
+            # Vom User am Member gewähltes Ablaufdatum hat Vorrang.
+            self.wg_deploy_hash_expiry = self.wg_deploy_expiry
+        else:
+            expiration_minutes = int(
+                self.env["ir.config_parameter"].get_param(
+                    key="ovpn.wg_deploy_hash_expiration_time", default=10
+                )
+            )
+            self.wg_deploy_hash_expiry = (
+                arrow.utcnow()
+                .shift(minutes=expiration_minutes)
+                .strftime(DEFAULT_SERVER_DATETIME_FORMAT)
+            )
         if not self.wg_private_key:
             self.wg_register_token = str(uuid.uuid4())
             self.wg_register_token_expiry = (
@@ -481,18 +612,9 @@ class OvpnMember(models.Model):
         vpn_ip = self.ip_address
         # Port comes from the stored config (matches what the server actually listens on),
         # not site.wg_server_port which can drift.
-        ep_match = re.search(r"(?m)^Endpoint = [^:\s]+:(\d+)", config)
-        port = (
-            int(ep_match.group(1))
-            if ep_match
-            else (self.site_id.wg_server_port or 51820)
-        )
+        port = self._wg_endpoint_port(config)
         if self.use_wstunnel:
-            config = re.sub(
-                r"(?m)^Endpoint = .*$",
-                f"Endpoint = 127.0.0.1:{port}",
-                config,
-            )
+            config = self._endpoint_to_localhost(config, port)
 
         wg_install = f"""# --- WireGuard install ---
 case "$OS" in
@@ -557,12 +679,7 @@ OS=$(uname -s)
 {wg_install}"""
 
         # wstunnel branch — compose URL from site fields
-        host = self.site_id.wstunnel_host or "vpn.zebroo.de"
-        ws_port = self.site_id.wstunnel_port or 443
-        prefix = self.site_id.wstunnel_path_prefix or "wgws"
-        version = self.site_id.wstunnel_version or "v10.5.5"
-        port_suffix = "" if ws_port == 443 else f":{ws_port}"
-        endpoint = f"wss://{host}{port_suffix}"
+        endpoint, prefix, version = self._wstunnel_params()
         return f"""#!/bin/bash
 set -e
 OS=$(uname -s); ARCH=$(uname -m)
@@ -719,8 +836,11 @@ done
 
 {wg_install}"""
 
-    def _build_provisioning_script(self):
+    def _build_provisioning_script(self, use_wstunnel=None):
         self.ensure_one()
+        # use_wstunnel=None -> fall back to the member's stored flag; the TCP
+        # download button passes True to force the WSS/443 (wstunnel) variant.
+        use_wst = self.use_wstunnel if use_wstunnel is None else use_wstunnel
         site = self.site_id
         if not site.wg_server_public_key:
             raise UserError(
@@ -751,7 +871,7 @@ done
         )
         register_url = f"{base_url}/vpn/register-pubkey/{self.wg_register_token}"
 
-        if self.use_wstunnel:
+        if use_wst:
             endpoint = f"127.0.0.1:{port}"
         else:
             endpoint = f"{site.remote}:{port}"
@@ -846,19 +966,14 @@ cat "$WG_DIR/{iface}.conf"
 echo "===== end of config ====="
 """
 
-        if not self.use_wstunnel:
+        if not use_wst:
             return f"""#!/bin/bash
 set -e
 OS=$(uname -s)
 {wg_pkg}
 {provision}"""
 
-        ws_host = site.wstunnel_host or "vpn.zebroo.de"
-        ws_port = site.wstunnel_port or 443
-        ws_prefix = site.wstunnel_path_prefix or "wgws"
-        version = site.wstunnel_version or "v10.5.5"
-        port_suffix = "" if ws_port == 443 else f":{ws_port}"
-        ws_endpoint = f"wss://{ws_host}{port_suffix}"
+        ws_endpoint, ws_prefix, version = self._wstunnel_params()
         return f"""#!/bin/bash
 set -e
 OS=$(uname -s); ARCH=$(uname -m)

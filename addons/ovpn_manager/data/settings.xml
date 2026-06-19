@@ -9,5 +9,9 @@
       <field name="key">ovpn.download_hash_expiration_time</field>
       <field name="value">30</field>
     </record>
+    <record id="ovpn_wg_deploy_hash_expiration_time" model="ir.config_parameter">
+      <field name="key">ovpn.wg_deploy_hash_expiration_time</field>
+      <field name="value">10</field>
+    </record>
   </data>
 </odoo>

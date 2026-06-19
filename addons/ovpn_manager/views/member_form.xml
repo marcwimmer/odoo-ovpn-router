@@ -7,12 +7,34 @@
       <field name="arch" type="xml">
         <form string="">
           <header>
-            <button name="download" icon="fa-download" type="object"/>
+            <button name="download" string="Download" icon="fa-download" type="object" class="btn-primary"/>
             <button name="generate_wg_deploy_link" string="WireGuard Deploy Link" icon="fa-terminal" type="object" attrs="{'invisible': [('wg_private_key', '=', False)]}"/>
             <button name="apply_site" string="Apply to VPN Server" icon="fa-check" type="object" class="btn-secondary"/>
           </header>
           <sheet>
             <field name="active" invisible="1"/>
+            <div class="alert alert-info" role="alert">
+              <p>
+                Mit dem Button <b>Download</b> oben wird ein frischer
+                Deploy-Download-Link erzeugt: der Member zieht dar&#xFC;ber sein
+                WireGuard-Setup (Install-Script bzw. Plain-Conf).
+              </p>
+              <ul class="mb-0">
+                <li>
+                  Der Link unter <b>Download Link</b> ist ein Einmal-Link und
+                  l&#xE4;uft automatisch ab (siehe <b>Download Hash Clear Date</b>,
+                  Default 30 Minuten).
+                </li>
+                <li>
+                  Der Abruf ist zus&#xE4;tzlich durch das
+                  <b>One Time Password</b> der Site gesch&#xFC;tzt.
+                </li>
+                <li>
+                  Jeder Klick auf <b>Download</b> erzeugt einen neuen Link und
+                  macht den vorherigen ung&#xFC;ltig.
+                </li>
+              </ul>
+            </div>
             <div class="oe_title">
               <h1>
                 <field name="name" colspan="4" class="oe_inline"/>
@@ -33,6 +55,7 @@
               <field name="is_master"/>
               <field name="force_remote"/>
               <field name="use_wstunnel"/>
+              <field name="deliver_full_conf"/>
             </group>
             <group string="IP History" attrs="{'invisible': [('ip_history_ids', '=', [])]}">
               <field name="ip_history_ids" nolabel="1" colspan="2">
@@ -43,6 +66,7 @@
               </field>
             </group>
             <group string="WireGuard" attrs="{'invisible': [('wg_private_key', '=', False)]}">
+              <field name="wg_deploy_expiry"/>
               <field name="wg_deploy_link" widget="url" attrs="{'invisible': [('wg_deploy_link', '=', False)]}"/>
               <field name="wg_deploy_hash_expiry" attrs="{'invisible': [('wg_deploy_link', '=', False)]}"/>
               <field name="wg_config" nolabel="1" colspan="2" readonly="1"/>
