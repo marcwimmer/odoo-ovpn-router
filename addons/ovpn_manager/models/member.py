@@ -102,7 +102,13 @@ class OvpnMember(models.Model):
         "Certificate Content", compute="_cert_content", attachment=True
     )
     download_hash = fields.Char()
-    download_hash_clear_date = fields.Datetime()
+    download_hash_clear_date = fields.Datetime(
+        "Aktueller Link läuft ab am",
+        help="Status (automatisch): Ablaufzeitpunkt des zuletzt per 'Download' "
+        "erzeugten Links. Danach wird der Link automatisch ungültig. Wird beim "
+        "Klick auf 'Download' gesetzt – entweder aus dem unten vorgegebenen "
+        "Ablaufdatum oder aus der Standarddauer (Default 30 Min).",
+    )
     download_link = fields.Char(compute="_compute_download_link", store=False)
     temp_hash = fields.Char("Temp Hash")
     temp_hash_expiry = fields.Datetime("Temp Link Expiry")
@@ -126,13 +132,12 @@ class OvpnMember(models.Model):
     )
     wg_deploy_hash = fields.Char()
     wg_deploy_hash_expiry = fields.Datetime("Deploy Link Expiry")
-    wg_deploy_expiry = fields.Datetime(
-        "Deploy Link gültig bis (gewünscht)",
-        help="Optionales Ablaufdatum für den nächsten Deploy-Link. Ist hier ein "
-        "(zukünftiges) Datum gesetzt, gilt der beim Klick auf 'WireGuard Deploy "
-        "Link' erzeugte Link bis zu diesem Zeitpunkt. Bleibt das Feld leer, wird "
-        "die Standard-Gültigkeitsdauer aus dem Systemparameter "
-        "'ovpn.wg_deploy_hash_expiration_time' (Minuten, Default 10) verwendet.",
+    download_expiry = fields.Datetime(
+        "Ablaufdatum vorgeben (optional)",
+        help="Eingabe (optional): Bis wann der nächste über 'Download' erzeugte "
+        "Link gültig sein soll. Leer lassen = Standarddauer (Systemparameter "
+        "'ovpn.download_hash_expiration_time', Default 30 Min). Ein hier gesetztes "
+        "(zukünftiges) Datum überschreibt die Standarddauer.",
     )
     wg_deploy_link = fields.Char(compute="_compute_wg_deploy_link", store=False)
     wg_register_token = fields.Char()
@@ -360,16 +365,21 @@ class OvpnMember(models.Model):
     def download(self):
         self.ensure_one()
         self.download_hash = str(uuid.uuid4())
-        expiration_minutes = int(
-            self.env["ir.config_parameter"].get_param(
-                key="ovpn.download_hash_expiration_time", default=30
+        if self.download_expiry and self.download_expiry > fields.Datetime.now():
+            # Vom User am Member gewähltes Ablaufdatum hat Vorrang und
+            # überschreibt die Standard-Gültigkeitsdauer (Default 30 Min).
+            self.download_hash_clear_date = self.download_expiry
+        else:
+            expiration_minutes = int(
+                self.env["ir.config_parameter"].get_param(
+                    key="ovpn.download_hash_expiration_time", default=30
+                )
             )
-        )
-        self.download_hash_clear_date = (
-            arrow.utcnow()
-            .shift(minutes=expiration_minutes)
-            .strftime(DEFAULT_SERVER_DATETIME_FORMAT)
-        )
+            self.download_hash_clear_date = (
+                arrow.utcnow()
+                .shift(minutes=expiration_minutes)
+                .strftime(DEFAULT_SERVER_DATETIME_FORMAT)
+            )
         return {
             "type": "ir.actions.act_url",
             "url": self.download_vpn_link(),
@@ -555,20 +565,16 @@ class OvpnMember(models.Model):
     def generate_wg_deploy_link(self):
         self.ensure_one()
         self.wg_deploy_hash = self._generate_temp_hash()
-        if self.wg_deploy_expiry and self.wg_deploy_expiry > fields.Datetime.now():
-            # Vom User am Member gewähltes Ablaufdatum hat Vorrang.
-            self.wg_deploy_hash_expiry = self.wg_deploy_expiry
-        else:
-            expiration_minutes = int(
-                self.env["ir.config_parameter"].get_param(
-                    key="ovpn.wg_deploy_hash_expiration_time", default=10
-                )
+        expiration_minutes = int(
+            self.env["ir.config_parameter"].get_param(
+                key="ovpn.wg_deploy_hash_expiration_time", default=10
             )
-            self.wg_deploy_hash_expiry = (
-                arrow.utcnow()
-                .shift(minutes=expiration_minutes)
-                .strftime(DEFAULT_SERVER_DATETIME_FORMAT)
-            )
+        )
+        self.wg_deploy_hash_expiry = (
+            arrow.utcnow()
+            .shift(minutes=expiration_minutes)
+            .strftime(DEFAULT_SERVER_DATETIME_FORMAT)
+        )
         if not self.wg_private_key:
             self.wg_register_token = str(uuid.uuid4())
             self.wg_register_token_expiry = (

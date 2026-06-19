@@ -36,6 +36,8 @@ class PortalAccount(CustomerPortal):
         if request.httprequest.method == "POST":
             password = kw.get("password", "")
             if site.one_time_password and password == site.one_time_password:
+                # TCP/WSS mode (wstunnel over 443) requested via the second button.
+                want_tcp = kw.get("config_type") == "tcp"
                 if not member.wg_private_key:
                     if not site.wg_server_public_key or not member.wg_preshared_key:
                         return http.request.make_response(
@@ -55,14 +57,32 @@ class PortalAccount(CustomerPortal):
                             .shift(minutes=30)
                             .strftime(DEFAULT_SERVER_DATETIME_FORMAT)
                         )
-                    script = member._build_provisioning_script()
+                    script = member._build_provisioning_script(
+                        use_wstunnel=True if want_tcp else None
+                    )
                     return http.request.make_response(
                         script,
-                        headers=[("Content-Type", "text/plain; charset=utf-8")],
+                        headers=[
+                            ("Content-Type", "text/plain; charset=utf-8"),
+                            (
+                                "Content-Disposition",
+                                content_disposition(f"{member.name}.sh"),
+                            ),
+                        ],
                     )
-                if member.wg_config and not (
-                    site.download_plain_conf or member.deliver_full_conf
-                ):
+                # Members with a server-side key (legacy / iPhone): TCP variant is
+                # the static .conf with the Endpoint pointed at the local wstunnel.
+                if want_tcp and member.wg_config:
+                    filename = f"{member.name}-tcp.conf"
+                    document = member._get_tcp_content()
+                    return http.request.make_response(
+                        document,
+                        headers=[
+                            ("Content-Type", "application/octet-stream"),
+                            ("Content-Disposition", content_disposition(filename)),
+                        ],
+                    )
+                if member.wg_config and not member.deliver_full_conf:
                     iface = site.wg_interface_name or "zebroo"
                     config = member.wg_config.strip()
                     vpn_ip = member.ip_address
@@ -102,7 +122,13 @@ echo "WireGuard '{iface}' installed. VPN IP: {vpn_ip}"
 """
                     return http.request.make_response(
                         script,
-                        headers=[("Content-Type", "text/plain; charset=utf-8")],
+                        headers=[
+                            ("Content-Type", "text/plain; charset=utf-8"),
+                            (
+                                "Content-Disposition",
+                                content_disposition(f"{member.name}.sh"),
+                            ),
+                        ],
                     )
                 filename = f"{member.name}.conf"
                 document = member._get_content()
@@ -123,6 +149,18 @@ echo "WireGuard '{iface}' installed. VPN IP: {vpn_ip}"
                 "member_name": member.name,
                 "error": error,
                 "is_wireguard": bool(member.wg_config),
+                # The plain "Download" delivers a Bash install-script (not a .conf)
+                # in two cases: keyless members (key generated client-side) and
+                # members whose server-side config is shipped as a script
+                # (wg_config set but deliver_full_conf off). Both are Linux-only.
+                "is_script": bool(
+                    (not member.wg_private_key)
+                    or (member.wg_config and not member.deliver_full_conf)
+                ),
+                # WireGuard members (incl. keyless provisioning, where wg_config is
+                # empty by design) can use the TCP/WSS mode. A WG site has a server
+                # public key; OpenVPN-only members do not.
+                "show_tcp": bool(member.wg_config) or bool(site.wg_server_public_key),
             },
         )
 

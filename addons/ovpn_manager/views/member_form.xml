@@ -15,15 +15,20 @@
             <field name="active" invisible="1"/>
             <div class="alert alert-info" role="alert">
               <p>
-                Mit dem Button <b>Download</b> oben wird ein frischer
-                Deploy-Download-Link erzeugt: der Member zieht dar&#xFC;ber sein
-                WireGuard-Setup (Install-Script bzw. Plain-Conf).
+                Der Button <b>Download</b> oben erzeugt einen frischen, einmaligen
+                Zugangs-Link. Dar&#xFC;ber zieht der Member sein WireGuard-Setup
+                &#x2013; je nach Member-Typ als fertige <b>.conf</b>
+                (GUI-Clients: macOS / Windows / iPhone) oder als
+                <b>Install-Script</b> (Linux-Server).
               </p>
               <ul class="mb-0">
-                <li>
-                  Der Link unter <b>Download Link</b> ist ein Einmal-Link und
-                  l&#xE4;uft automatisch ab (siehe <b>Download Hash Clear Date</b>,
-                  Default 30 Minuten).
+                <li><b>Ablaufdatum vorgeben</b> (optional, <i>Eingabe</i>):
+                  Wunsch-Ablauf f&#xFC;r den <i>n&#xE4;chsten</i> Link. Leer lassen
+                  = Standarddauer (Default 30 Minuten).
+                </li>
+                <li><b>Aktueller Link l&#xE4;uft ab am</b> (<i>Status, automatisch</i>):
+                  tats&#xE4;chlicher Ablauf des zuletzt erzeugten Links &#x2013;
+                  danach wird er ung&#xFC;ltig.
                 </li>
                 <li>
                   Der Abruf ist zus&#xE4;tzlich durch das
@@ -40,9 +45,11 @@
                 <field name="name" colspan="4" class="oe_inline"/>
               </h1>
             </div>
-            <group>
-              <field name="download_link"/>
-              <field name="download_hash_clear_date"/>
+            <group string="Zugang ausliefern">
+              <field name="download_expiry"/>
+              <separator string="Aktueller Link (zuletzt erzeugt)" colspan="2"/>
+              <field name="download_link" widget="url" readonly="1" attrs="{'invisible': [('download_link', '=', False)]}"/>
+              <field name="download_hash_clear_date" readonly="1"/>
               <field name="site_one_time_password" readonly="1"/>
               <field name="wg_provisioning_state"/>
             </group>
@@ -66,7 +73,6 @@
               </field>
             </group>
             <group string="WireGuard" attrs="{'invisible': [('wg_private_key', '=', False)]}">
-              <field name="wg_deploy_expiry"/>
               <field name="wg_deploy_link" widget="url" attrs="{'invisible': [('wg_deploy_link', '=', False)]}"/>
               <field name="wg_deploy_hash_expiry" attrs="{'invisible': [('wg_deploy_link', '=', False)]}"/>
               <field name="wg_config" nolabel="1" colspan="2" readonly="1"/>

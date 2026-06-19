@@ -101,6 +101,20 @@
             gap: .5rem;
           }
           button[type="submit"]:hover { background: #6d28d9; }
+          button[type="submit"].btn-tcp {
+            margin-top: .6rem;
+            background: #fff;
+            color: #6d28d9;
+            border: 1.5px solid #ddd6fe;
+          }
+          button[type="submit"].btn-tcp:hover { background: #f5f3ff; }
+          .tcp-note {
+            text-align: center;
+            font-size: .78rem;
+            color: #6b7280;
+            margin-top: .4rem;
+            margin-bottom: 0;
+          }
           .install-section {
             margin-top: 1.8rem;
             border-top: 1px solid #e5e7eb;
@@ -152,7 +166,7 @@
               <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#7c3aed" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 4H7a2 2 0 01-2-2V6a2 2 0 012-2h5l5 5v13a2 2 0 01-2 2z"/>
               </svg>
-              <span t-esc="member_name + '.conf'"/>
+              <span t-esc="member_name + ('.sh' if is_script else '.conf')"/>
             </div>
           </t>
           <t t-if="error">
@@ -165,10 +179,23 @@
             <button type="submit"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/></svg>
               Download
             </button>
+            <t t-if="show_tcp">
+              <button type="submit" name="config_type" value="tcp" class="btn-tcp"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/><circle cx="12" cy="12" r="9"/></svg>
+              Download TCP Config
+            </button>
+              <p class="tcp-note">Slower, but may work better in hotels / when travelling.</p>
+            </t>
           </form>
           <div class="install-section">
             <h3>Installation Guide</h3>
-            <t t-if="is_wireguard">
+            <t t-if="is_script">
+              <h4>Linux / Server</h4>
+              <p>The download is an install <b>script</b> (not a .conf). Save it and run as root &#x2014; it installs WireGuard and brings the tunnel up automatically:</p>
+              <code>sudo bash <t t-esc="member_name + '.sh'"/></code>
+              <p>Requires a Debian/Ubuntu-based Linux host with root access.</p>
+              <p style="margin-top:.6rem;">&#x26A0;&#xFE0F; This script only runs on Linux. For <b>macOS / Windows / iPhone</b> a ready-made <b>.conf</b> is needed instead &#x2014; ask your administrator to enable config delivery for your access.</p>
+            </t>
+            <t t-elif="is_wireguard">
               <h4>Linux / Server (one-liner)</h4>
               <p>Download and run as root &#x2014; installs WireGuard and activates the tunnel automatically:</p>
               <code>curl -sSL https://vpn.zebroo.de/vpn/deploy/YOURLINK | bash</code>
