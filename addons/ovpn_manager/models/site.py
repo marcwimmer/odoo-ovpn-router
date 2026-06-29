@@ -62,11 +62,6 @@ class OvpnSite(models.Model):
         default="v10.5.5",
         help="Release tag on github.com/erebe/wstunnel used by client install script.",
     )
-    download_plain_conf = fields.Boolean(
-        "Download Plain Conf",
-        help="If enabled, downloads deliver the raw WireGuard .conf file instead "
-        "of the install script. Handy for iPhone (WireGuard app imports .conf).",
-    )
 
     def _next_ip(self):
         self.ensure_one()

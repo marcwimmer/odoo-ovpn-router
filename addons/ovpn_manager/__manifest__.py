@@ -26,5 +26,5 @@
     "external_dependencies": {"bin": [], "python": ["jingtrang", "ipaddress", "arrow"]},
     "name": "ovpn_manager",
     "test": [],
-    "version": "16.0.1.0",
+    "version": "16.0.1.1.0",
 }

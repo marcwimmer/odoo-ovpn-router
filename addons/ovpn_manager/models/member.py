@@ -12,6 +12,9 @@ import hashlib
 import random
 import re
 import string
+import logging
+
+_logger = logging.getLogger(__name__)
 
 _TEMP_ADJECTIVES = [
     "brave",
@@ -291,6 +294,7 @@ class OvpnMember(models.Model):
             self._apply_delivery_mode()
         elif "deliver_full_conf" in vals and vals.get("deliver_full_conf"):
             self._ensure_iphone_keypair()
+            self._sync_server_config()
         return result
 
     def _log_initial_ip(self):
@@ -362,6 +366,29 @@ class OvpnMember(models.Model):
                 rec.deliver_full_conf = False
                 rec.wg_private_key = False
                 rec.wg_public_key = False
+        self._sync_server_config()
+
+    def _sync_server_config(self):
+        """Push the changed delivery setup to the WireGuard server by
+        regenerating settings.json. The server container's run.sh watches that
+        file (md5) and rebuilds wg1.conf + reloads wg on change.
+
+        Without this, switching a member to full-config (or otherwise changing
+        its server-side keypair) silently leaves the server peer stale -- it
+        keeps the old/legacy public key and no PSK -- until someone manually
+        clicks "Apply and Restart VPN Server". This mirrors what the
+        register-pubkey controller already does for the keyless flow.
+        """
+        for site in self.mapped("site_id"):
+            if not site:
+                continue
+            try:
+                site.generate_json()
+            except Exception:
+                _logger.exception(
+                    "delivery-mode: settings.json regeneration failed " "for site %s",
+                    site.id,
+                )
 
     @api.model_create_multi
     def create(self, vals_list):

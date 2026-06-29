@@ -152,11 +152,17 @@ echo "WireGuard '{iface}' installed. VPN IP: {vpn_ip}"
                 # The plain "Download" delivers a Bash install-script (not a .conf)
                 # in two cases: keyless members (key generated client-side) and
                 # members whose server-side config is shipped as a script
-                # (wg_config set but deliver_full_conf off). Both are Linux-only.
+                # (wg_config set but deliver_full_conf off).
                 "is_script": bool(
                     (not member.wg_private_key)
                     or (member.wg_config and not member.deliver_full_conf)
                 ),
+                # Keyless members get the provisioning script (_build_provisioning_script),
+                # which generates the PrivateKey locally and DOES support macOS
+                # (brew + wg genkey). The server-key install-script, on the other
+                # hand, is genuinely Linux-only (apt-get/wg-quick). This flag lets
+                # the template show the right guide for each case.
+                "is_client_key_script": bool(not member.wg_private_key),
                 # WireGuard members (incl. keyless provisioning, where wg_config is
                 # empty by design) can use the TCP/WSS mode. A WG site has a server
                 # public key; OpenVPN-only members do not.

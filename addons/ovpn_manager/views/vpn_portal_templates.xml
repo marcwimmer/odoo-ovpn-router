@@ -188,7 +188,15 @@
           </form>
           <div class="install-section">
             <h3>Installation Guide</h3>
-            <t t-if="is_script">
+            <t t-if="is_script and is_client_key_script">
+              <h4>Linux / Server &amp; macOS</h4>
+              <p>The download is an install <b>script</b> (not a .conf). It generates the WireGuard private key <b>locally on your machine</b> (the key never leaves your device), registers the public key and brings the tunnel up automatically. Save it and run as root:</p>
+              <code>sudo bash <t t-esc="member_name + '.sh'"/></code>
+              <p><b>Linux:</b> a Debian/Ubuntu-based host with root access.<br/>
+              <b>macOS:</b> install <a href="https://brew.sh" target="_blank" style="color:#7c3aed;">Homebrew</a> first, then run the script &#x2014; it installs <code>wireguard-tools</code> via <code>brew</code> and configures the tunnel.</p>
+              <p style="margin-top:.6rem;">&#x2139;&#xFE0F; Windows / iPhone are not supported by this script &#x2014; for those a ready-made <b>.conf</b> is needed instead; ask your administrator to switch your delivery mode.</p>
+            </t>
+            <t t-elif="is_script">
               <h4>Linux / Server</h4>
               <p>The download is an install <b>script</b> (not a .conf). Save it and run as root &#x2014; it installs WireGuard and brings the tunnel up automatically:</p>
               <code>sudo bash <t t-esc="member_name + '.sh'"/></code>
