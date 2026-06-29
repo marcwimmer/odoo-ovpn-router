@@ -45,6 +45,8 @@
               <page string="Download Password">
                 <group>
                   <field name="one_time_password"/>
+                  <field name="password_locked_until"/>
+                  <button name="action_generate_password" type="object" string="Generate new password" class="btn-secondary"/>
                 </group>
               </page>
               <page string="Groups">
