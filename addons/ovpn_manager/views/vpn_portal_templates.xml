@@ -204,15 +204,20 @@
               <p style="margin-top:.6rem;">&#x26A0;&#xFE0F; This script only runs on Linux. For <b>macOS / Windows / iPhone</b> a ready-made <b>.conf</b> is needed instead &#x2014; ask your administrator to enable config delivery for your access.</p>
             </t>
             <t t-elif="is_wireguard">
-              <h4>Linux / Server (one-liner)</h4>
-              <p>Download and run as root &#x2014; installs WireGuard and activates the tunnel automatically:</p>
-              <code>curl -sSL https://vpn.zebroo.de/vpn/deploy/YOURLINK | bash</code>
-              <p>The deploy link is generated in the VPN admin portal (valid 10 min).</p>
+              <h4>Linux / Server</h4>
+              <p>You downloaded a ready-made <b>.conf</b>. Install WireGuard, copy the file into place and bring the tunnel up (run as root):</p>
+              <code>sudo apt-get install -y wireguard wireguard-tools
+sudo cp <t t-esc="member_name + '.conf'"/> /etc/wireguard/
+sudo chmod 600 /etc/wireguard/<t t-esc="member_name + '.conf'"/>
+sudo wg-quick up <t t-esc="member_name"/>
+sudo systemctl enable wg-quick@<t t-esc="member_name"/></code>
               <h4>macOS</h4>
               <p>Install <a href="https://apps.apple.com/app/wireguard/id1451685025" target="_blank" style="color:#7c3aed;">WireGuard</a> from the App Store &#x2192; <b>Import Tunnel(s) from File</b> &#x2192; select the downloaded .conf file &#x2192; <b>Activate</b>.</p>
               <h4>Windows</h4>
               <p>1. Download <a href="https://www.wireguard.com/install/" target="_blank" style="color:#7c3aed;">WireGuard for Windows</a>.<br/>
               2. Open WireGuard &#x2192; <b>Import tunnel(s) from file</b> &#x2192; select the downloaded .conf file &#x2192; <b>Activate</b>.</p>
+              <h4>iPhone / iPad</h4>
+              <p>Install the <a href="https://apps.apple.com/app/wireguard/id1451685025" target="_blank" style="color:#7c3aed;">WireGuard</a> app from the App Store &#x2192; tap <b>+</b> &#x2192; <b>Create from file or archive</b> &#x2192; select the downloaded .conf file &#x2192; enable the tunnel.</p>
             </t>
             <t t-else="">
               <h4>macOS</h4>

@@ -38,7 +38,13 @@ class PortalAccount(CustomerPortal):
             if site.one_time_password and password == site.one_time_password:
                 # TCP/WSS mode (wstunnel over 443) requested via the second button.
                 want_tcp = kw.get("config_type") == "tcp"
-                if not member.wg_private_key:
+                # The delivery_mode is authoritative: a member set to
+                # "Install-Script (Schlüssel am Client erzeugt)" always gets the
+                # keyless provisioning script, even if a legacy server-side
+                # wg_private_key is still lingering in the DB. Previously this
+                # branched on `not member.wg_private_key`, so a residual legacy
+                # key silently forced the server-key path regardless of setting.
+                if member.delivery_mode == "script_client_key":
                     if not site.wg_server_public_key or not member.wg_preshared_key:
                         return http.request.make_response(
                             "Member not ready: missing server public key or "
@@ -82,7 +88,7 @@ class PortalAccount(CustomerPortal):
                             ("Content-Disposition", content_disposition(filename)),
                         ],
                     )
-                if member.wg_config and not member.deliver_full_conf:
+                if member.delivery_mode == "script_server_key" and member.wg_config:
                     iface = site.wg_interface_name or "zebroo"
                     config = member.wg_config.strip()
                     vpn_ip = member.ip_address
@@ -150,19 +156,17 @@ echo "WireGuard '{iface}' installed. VPN IP: {vpn_ip}"
                 "error": error,
                 "is_wireguard": bool(member.wg_config),
                 # The plain "Download" delivers a Bash install-script (not a .conf)
-                # in two cases: keyless members (key generated client-side) and
-                # members whose server-side config is shipped as a script
-                # (wg_config set but deliver_full_conf off).
-                "is_script": bool(
-                    (not member.wg_private_key)
-                    or (member.wg_config and not member.deliver_full_conf)
-                ),
-                # Keyless members get the provisioning script (_build_provisioning_script),
+                # for both script delivery modes; only full_conf ships a .conf.
+                # Driven by delivery_mode (authoritative), not by the presence of
+                # a lingering legacy wg_private_key.
+                "is_script": member.delivery_mode
+                in ("script_server_key", "script_client_key"),
+                # Client-key members get the provisioning script (_build_provisioning_script),
                 # which generates the PrivateKey locally and DOES support macOS
                 # (brew + wg genkey). The server-key install-script, on the other
                 # hand, is genuinely Linux-only (apt-get/wg-quick). This flag lets
                 # the template show the right guide for each case.
-                "is_client_key_script": bool(not member.wg_private_key),
+                "is_client_key_script": member.delivery_mode == "script_client_key",
                 # WireGuard members (incl. keyless provisioning, where wg_config is
                 # empty by design) can use the TCP/WSS mode. A WG site has a server
                 # public key; OpenVPN-only members do not.
@@ -208,11 +212,7 @@ echo "WireGuard '{iface}' installed. VPN IP: {vpn_ip}"
         ):
             return request.not_found()
 
-        if member.wg_private_key:
-            if not member.wg_config:
-                return request.not_found()
-            script = member._build_install_script()
-        else:
+        if member.delivery_mode == "script_client_key":
             if (
                 not member.site_id.wg_server_public_key
                 or not member.wg_preshared_key
@@ -220,6 +220,10 @@ echo "WireGuard '{iface}' installed. VPN IP: {vpn_ip}"
             ):
                 return request.not_found()
             script = member._build_provisioning_script()
+        else:
+            if not member.wg_config:
+                return request.not_found()
+            script = member._build_install_script()
 
         member.wg_deploy_hash = False
         member.wg_deploy_hash_expiry = False

@@ -662,7 +662,7 @@ class OvpnMember(models.Model):
             .shift(minutes=expiration_minutes)
             .strftime(DEFAULT_SERVER_DATETIME_FORMAT)
         )
-        if not self.wg_private_key:
+        if self.delivery_mode == "script_client_key":
             self.wg_register_token = str(uuid.uuid4())
             self.wg_register_token_expiry = (
                 arrow.utcnow()
@@ -973,22 +973,24 @@ done
 case "$OS" in
 Linux)
     if grep -qi 'buster' /etc/os-release 2>/dev/null; then
-        cat > /etc/apt/sources.list << 'APT_EOF'
+        $SUDO tee /etc/apt/sources.list >/dev/null << 'APT_EOF'
 deb http://archive.debian.org/debian buster main contrib non-free
 deb http://archive.debian.org/debian buster-backports main contrib non-free
 APT_EOF
-        apt-get -o Acquire::Check-Valid-Until=false update -qq
-        apt-get install -y -t buster-backports wireguard-tools || apt-get install -y wireguard-tools
+        $SUDO apt-get -o Acquire::Check-Valid-Until=false update -qq
+        $SUDO apt-get install -y -t buster-backports wireguard-tools || $SUDO apt-get install -y wireguard-tools
     else
-        apt-get install -y wireguard wireguard-tools curl
+        $SUDO apt-get install -y wireguard wireguard-tools curl
     fi
     ;;
 Darwin)
+    # Homebrew runs as the normal user (never root) -- see the privilege
+    # helper injected above, which also refuses a root/sudo invocation on macOS.
     if ! command -v wg-quick >/dev/null 2>&1; then
         if command -v brew >/dev/null 2>&1; then
             brew install wireguard-tools
         else
-            echo "macOS: install Homebrew + 'brew install wireguard-tools' (or WireGuard.app) before running this script." >&2
+            echo "macOS: bitte zuerst Homebrew installieren (https://brew.sh), dann erneut ausfuehren." >&2
             exit 1
         fi
     fi
@@ -998,14 +1000,23 @@ esac
 
         provision = f"""# --- Generate keypair locally (PrivateKey never leaves this host) ---
 WG_DIR=/etc/wireguard
-[ "$OS" = "Darwin" ] && WG_DIR=/usr/local/etc/wireguard
-mkdir -p "$WG_DIR"
+$SUDO mkdir -p "$WG_DIR"
 umask 077
 
-PRIV=$(wg genkey)
-PUB=$(echo "$PRIV" | wg pubkey)
-echo "$PRIV" > "$WG_DIR/{iface}.key"
-chmod 600 "$WG_DIR/{iface}.key"
+# wg / wg-quick may live in a Homebrew bin that sudo's secure_path drops, so
+# resolve their absolute paths now (as the invoking user) and call them
+# explicitly under $SUDO below.
+WG=$(command -v wg || true)
+WGQUICK=$(command -v wg-quick || true)
+if [ -z "$WG" ] || [ -z "$WGQUICK" ]; then
+    echo "ERROR: wg/wg-quick not found in PATH after install." >&2
+    exit 1
+fi
+
+PRIV=$("$WG" genkey)
+PUB=$(printf '%s' "$PRIV" | "$WG" pubkey)
+printf '%s\\n' "$PRIV" | $SUDO tee "$WG_DIR/{iface}.key" >/dev/null
+$SUDO chmod 600 "$WG_DIR/{iface}.key"
 echo "==> Generated keypair; public key: $PUB"
 
 # --- Register public key with Odoo (PrivateKey stays local) ---
@@ -1023,7 +1034,7 @@ done
 echo
 
 # --- Write WireGuard config (PrivateKey injected from shell variable) ---
-cat > "$WG_DIR/{iface}.conf" << WG_CONFIG_EOF
+$SUDO tee "$WG_DIR/{iface}.conf" >/dev/null << WG_CONFIG_EOF
 [Interface]
 Address = {ip}/{prefix}
 PrivateKey = $PRIV
@@ -1035,34 +1046,104 @@ Endpoint = {endpoint}
 AllowedIPs = {allowed}
 PersistentKeepalive = 25
 WG_CONFIG_EOF
-chmod 600 "$WG_DIR/{iface}.conf"
+$SUDO chmod 600 "$WG_DIR/{iface}.conf"
 
-[ "$OS" = "Linux" ] && (modprobe wireguard 2>/dev/null || true)
-wg-quick down {iface} 2>/dev/null || true
-wg-quick up {iface}
+[ "$OS" = "Linux" ] && ($SUDO modprobe wireguard 2>/dev/null || true)
+$SUDO "$WGQUICK" down "$WG_DIR/{iface}.conf" 2>/dev/null || true
+$SUDO "$WGQUICK" up "$WG_DIR/{iface}.conf"
 
 # Enable at boot
 if [ "$OS" = "Linux" ]; then
     if command -v systemctl > /dev/null 2>&1 && systemctl is-system-running > /dev/null 2>&1; then
-        systemctl enable wg-quick@{iface}
+        $SUDO systemctl enable wg-quick@{iface}
     else
         if ! grep -q "auto {iface}" /etc/network/interfaces 2>/dev/null; then
-            printf '\\nauto {iface}\\niface {iface} inet manual\\n    pre-up wg-quick up {iface}\\n    post-down wg-quick down {iface}\\n' >> /etc/network/interfaces
+            printf '\\nauto {iface}\\niface {iface} inet manual\\n    pre-up wg-quick up {iface}\\n    post-down wg-quick down {iface}\\n' | $SUDO tee -a /etc/network/interfaces >/dev/null
         fi
     fi
+elif [ "$OS" = "Darwin" ]; then
+    # Boot-Autostart via launchd (macOS has no systemd). wg-quick and
+    # wireguard-go live in the Homebrew bin dir (ARM: /opt/homebrew/bin,
+    # Intel: /usr/local/bin); derive it from the resolved wg-quick path so
+    # the LaunchDaemon can find wireguard-go at boot too. Without this the
+    # tunnel is up now but gone after the next reboot.
+    BINDIR=$(dirname "$WGQUICK")
+    PLIST=/Library/LaunchDaemons/com.zebroo.wg-{iface}.plist
+    $SUDO tee "$PLIST" >/dev/null << PLIST_EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.zebroo.wg-{iface}</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>$WGQUICK</string>
+        <string>up</string>
+        <string>$WG_DIR/{iface}.conf</string>
+    </array>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>$BINDIR:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <false/>
+    <key>StandardOutPath</key>
+    <string>/var/log/zebroo-wg-{iface}.log</string>
+    <key>StandardErrorPath</key>
+    <string>/var/log/zebroo-wg-{iface}.log</string>
+</dict>
+</plist>
+PLIST_EOF
+    $SUDO chmod 644 "$PLIST"
+    # (re)register with launchd -- modern bootstrap first, fall back to
+    # load -w on older macOS. The tunnel is already up from the wg-quick
+    # call above, so RunAtLoad's immediate exec may report "already
+    # exists"; that is harmless (the config persists for the next boot).
+    $SUDO launchctl bootout   system "$PLIST" 2>/dev/null || true
+    $SUDO launchctl bootstrap system "$PLIST" 2>/dev/null || $SUDO launchctl load -w "$PLIST" 2>/dev/null || true
+    echo "==> Boot autostart installed: $PLIST"
 fi
 
 echo "WireGuard '{iface}' installed. VPN IP: {ip}"
 echo
-echo "===== {iface}.conf (copy this into Synology / WireGuard app etc.) ====="
-cat "$WG_DIR/{iface}.conf"
-echo "===== end of config ====="
+# NOTE: the PrivateKey is written to $WG_DIR/{iface}.conf (chmod 600) and is
+# deliberately NOT printed here -- printing it invites screenshots / paste leaks.
+# --- Connectivity self-test over the tunnel (vesta / broker backend) ---
+echo "==> Testing VPN connectivity to vesta (10.222.0.95)..."
+if ping -c 3 10.222.0.95 >/dev/null 2>&1; then
+    echo "    OK - vesta (10.222.0.95) is reachable over the VPN."
+else
+    echo "    WARN - vesta (10.222.0.95) not reachable yet; check 'sudo wg show' for a handshake." >&2
+fi
 """
+
+        # Privilege / PATH helper prepended to every generated script. It lets a
+        # single script run both on a Linux server (invoked as root via
+        # "sudo bash", $SUDO empty) and on a macOS laptop (invoked WITHOUT sudo
+        # as the normal user, escalating per-command). Homebrew must never run
+        # as root, so on macOS a root/sudo invocation is refused with guidance.
+        priv_helper = """# --- privilege / PATH helper ---
+if [ "$(id -u)" -eq 0 ]; then SUDO=""; else SUDO="sudo"; fi
+if [ "$OS" = "Darwin" ]; then
+    for _b in /opt/homebrew/bin /usr/local/bin; do
+        [ -x "$_b/brew" ] && export PATH="$_b:$PATH"
+    done
+    if [ "$(id -u)" -eq 0 ]; then
+        echo "macOS: bitte OHNE sudo starten -> 'curl -fsSL <URL> | bash'" >&2
+        echo "(Homebrew laeuft nicht als root; das Script fragt selbst nach dem sudo-Passwort.)" >&2
+        exit 1
+    fi
+fi"""
 
         if not use_wst:
             return f"""#!/bin/bash
 set -e
 OS=$(uname -s)
+{priv_helper}
 {wg_pkg}
 {provision}"""
 
@@ -1070,6 +1151,7 @@ OS=$(uname -s)
         return f"""#!/bin/bash
 set -e
 OS=$(uname -s); ARCH=$(uname -m)
+{priv_helper}
 
 # --- wstunnel install ---
 case "$OS-$ARCH" in
