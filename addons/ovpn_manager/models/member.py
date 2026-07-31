@@ -413,6 +413,15 @@ class OvpnMember(models.Model):
         self.ensure_one()
         self.site_id.generate_json()
 
+    def action_send_password_mail(self):
+        """Open the password mail wizard with this member preselected."""
+        self.ensure_one()
+        action = self.site_id.action_send_password_mail()
+        action["context"] = dict(
+            action["context"], default_member_ids=[(6, 0, self.ids)]
+        )
+        return action
+
     def _get_json(self):
         res = {}
         for rec in self:

@@ -59,7 +59,10 @@
               <separator string="Aktueller Link (zuletzt erzeugt)" colspan="2"/>
               <field name="download_link" widget="url" readonly="1" attrs="{'invisible': [('download_link', '=', False)]}"/>
               <field name="download_hash_clear_date" readonly="1"/>
-              <field name="site_one_time_password" readonly="1"/>
+              <field name="site_one_time_password" readonly="1" password="True"/>
+              <div colspan="2">
+                <button name="action_send_password_mail" type="object" string="Passwort per Mail senden" class="btn-secondary" icon="fa-envelope"/>
+              </div>
               <field name="wg_provisioning_state"/>
             </group>
             <group string="" col="2">

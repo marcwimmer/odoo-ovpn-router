@@ -43,10 +43,18 @@
                 </group>
               </page>
               <page string="Download Password">
+                <div class="alert alert-info" role="alert">
+                  Das Passwort wird nicht im Klartext angezeigt. Zum Weitergeben
+                  <b>Passwort per Mail senden</b> benutzen &#x2013; dort lassen sich
+                  Members bzw. Kontakte als Empf&#xE4;nger ausw&#xE4;hlen.
+                </div>
                 <group>
-                  <field name="one_time_password"/>
+                  <field name="one_time_password" password="True"/>
                   <field name="password_locked_until"/>
-                  <button name="action_generate_password" type="object" string="Generate new password" class="btn-secondary"/>
+                  <div colspan="2">
+                    <button name="action_send_password_mail" type="object" string="Passwort per Mail senden" class="btn-primary" icon="fa-envelope"/>
+                    <button name="action_generate_password" type="object" string="Generate new password" class="btn-secondary"/>
+                  </div>
                 </group>
               </page>
               <page string="Groups">
@@ -57,6 +65,10 @@
               </page>
             </notebook>
           </sheet>
+          <div class="oe_chatter">
+            <field name="message_follower_ids"/>
+            <field name="message_ids"/>
+          </div>
         </form>
       </field>
     </record>

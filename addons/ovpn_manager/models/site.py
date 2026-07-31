@@ -282,6 +282,7 @@ def _generate_password():
 
 class OvpnSite(models.Model):
     _name = "ovpn.site"
+    _inherit = ["mail.thread"]
 
     name = fields.Char("Name")
 
@@ -431,6 +432,20 @@ class OvpnSite(models.Model):
         """Manually (re)generate the password, regardless of the cron lock."""
         for site in self:
             site.one_time_password = _generate_password()
+
+    def action_send_password_mail(self):
+        """Open the wizard that mails the current password to chosen recipients."""
+        self.ensure_one()
+        if not self.one_time_password:
+            raise UserError(_("This site has no password yet - generate one first."))
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Send password by mail"),
+            "res_model": "ovpn.site.password.mail",
+            "view_mode": "form",
+            "target": "new",
+            "context": dict(self.env.context, default_site_id=self.id),
+        }
 
     @api.constrains("net")
     def _check_members(self):
