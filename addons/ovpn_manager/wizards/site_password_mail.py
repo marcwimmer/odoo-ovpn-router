@@ -12,7 +12,14 @@ _DEFAULT_BODY = """<p>Hallo,</p>
 <p style="font-size: 16px;"><b>{password}</b></p>
 <p>Mit diesem Passwort wird der pers&#246;nliche Zugangs-Link freigeschaltet.
 Das Passwort wird regelm&#228;&#223;ig erneuert - bitte den Link zeitnah verwenden.</p>
-<p>Viele Gr&#252;&#223;e</p>"""
+<p>Viele Gr&#252;&#223;e</p>
+<hr/>
+<p>Hello,</p>
+<p>here is the current download password for the VPN access (site {site}):</p>
+<p style="font-size: 16px;"><b>{password}</b></p>
+<p>This password unlocks your personal access link. It is renewed regularly,
+so please use the link soon.</p>
+<p>Best regards</p>"""
 
 
 class OvpnSitePasswordMail(models.TransientModel):
