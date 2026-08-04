@@ -2,6 +2,7 @@ import re
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+from odoo.tools import formataddr
 
 # Recipients typed by hand may be separated by comma, semicolon or whitespace.
 _EMAIL_SEPARATOR = re.compile(r"[,;\s]+")
@@ -98,6 +99,26 @@ class OvpnSitePasswordMail(models.TransientModel):
             add("", email)
         return recipients, missing
 
+    def _sender_addresses(self):
+        """Return (email_from, reply_to).
+
+        Office 365 only lets us send as the mailbox the outgoing server is
+        authenticated with - anything else is rejected with SendAsDenied. So
+        the mail goes out from that mailbox and the acting user is put into
+        Reply-To.
+        """
+        self.ensure_one()
+        author = self.env.user.partner_id
+        reply_to = author.email_formatted or self.env.company.email
+        server = (
+            self.env["ir.mail_server"].sudo().search([], order="sequence, id", limit=1)
+        )
+        allowed = (server.from_filter or "").strip()
+        # from_filter may also hold a whole domain - then the user address is fine.
+        if "@" in allowed and allowed.lower() != (author.email or "").strip().lower():
+            return formataddr((author.name, allowed)), reply_to
+        return reply_to or allowed, reply_to
+
     def action_send(self):
         self.ensure_one()
         site = self.site_id
@@ -125,6 +146,7 @@ class OvpnSitePasswordMail(models.TransientModel):
         body = body.replace("{password}", password).replace("{site}", site.name or "")
 
         author = self.env.user.partner_id
+        email_from, reply_to = self._sender_addresses()
         Mail = self.env["mail.mail"].sudo()
         failed = []
         sent = []
@@ -135,8 +157,8 @@ class OvpnSitePasswordMail(models.TransientModel):
                     "body_html": body,
                     "email_to": ('"%s" <%s>' % (name, email)) if name else email,
                     "author_id": author.id,
-                    "email_from": author.email_formatted or self.env.company.email,
-                    "reply_to": author.email_formatted or self.env.company.email,
+                    "email_from": email_from,
+                    "reply_to": reply_to,
                     "auto_delete": False,
                 }
             )
