@@ -109,18 +109,22 @@ class OvpnSitePasswordMail(models.TransientModel):
     def _sender_addresses(self):
         """Return (email_from, reply_to).
 
-        Office 365 only lets us send as the mailbox the outgoing server is
-        authenticated with - anything else is rejected with SendAsDenied. So
-        the mail goes out from that mailbox and the acting user is put into
-        Reply-To.
+        Office 365 only lets us send as a mailbox we are allowed to send as -
+        anything else is rejected with SendAsDenied. So the mail goes out from
+        a fixed address and the acting user is put into Reply-To. The address
+        is taken from the config parameter ovpn.password_mail_from, and falls
+        back to the mailbox the outgoing server is authenticated with.
         """
         self.ensure_one()
         author = self.env.user.partner_id
         reply_to = author.email_formatted or self.env.company.email
+        configured = (
+            self.env["ir.config_parameter"].sudo().get_param("ovpn.password_mail_from")
+        )
         server = (
             self.env["ir.mail_server"].sudo().search([], order="sequence, id", limit=1)
         )
-        allowed = (server.from_filter or "").strip()
+        allowed = (configured or server.from_filter or "").strip()
         # from_filter may also hold a whole domain - then the user address is fine.
         if "@" in allowed and allowed.lower() != (author.email or "").strip().lower():
             return formataddr((author.name, allowed)), reply_to
