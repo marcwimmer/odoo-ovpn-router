@@ -11,3 +11,8 @@ repos:
   sha: 2d7c8ba5add9e00a9f9b9098ba2fa2a133cd2fb6
   type: integrated
   url: git@github.com:odoo/design-themes
+- branch: '16.0'
+  path: oca/server-tools
+  sha: aca22c1b4349eb8bf6b3f0af6d3d04db29ecacae
+  type: integrated
+  url: https://github.com/OCA/server-tools
