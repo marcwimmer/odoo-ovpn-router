@@ -177,23 +177,37 @@ class OvpnMember(models.Model):
     )
     delivery_mode = fields.Selection(
         [
-            ("full_conf", "Fertige .conf-Datei (Schlüssel vom Server)"),
-            ("script_server_key", "Install-Script (Schlüssel vom Server)"),
-            ("script_client_key", "Install-Script (Schlüssel am Client erzeugt)"),
+            (
+                "script_client_key",
+                "Linux / macOS — Install-Script, Schlüssel entsteht auf dem "
+                "Zielrechner",
+            ),
+            (
+                "script_server_key",
+                "Linux / macOS — Install-Script, Schlüssel kommt vom Server",
+            ),
+            (
+                "full_conf",
+                "WireGuard-App (Handy / Mac / Windows) — fertige .conf-Datei",
+            ),
         ],
         string="Auslieferungsart",
         default="script_client_key",
         required=True,
         help="Wie der Member sein WireGuard-Setup beim Download erhält:\n"
-        "• Fertige .conf-Datei (Schlüssel vom Server): Server erzeugt das "
-        "Schlüsselpaar und liefert die komplette .conf inkl. PrivateKey aus. Für "
-        "GUI-Clients (macOS / Windows / iPhone). Der PrivateKey verlässt dabei den "
-        "Server.\n"
-        "• Install-Script (Schlüssel vom Server): Server erzeugt den Schlüssel, "
-        "liefert ihn aber in einem Linux-Install-Script aus (apt + wg-quick).\n"
-        "• Install-Script (Schlüssel am Client erzeugt): Der PrivateKey entsteht "
-        "erst auf dem Client und wird beim Server registriert – der Server "
-        "speichert keinen PrivateKey (sicherste Variante, nur Linux-Server).",
+        "• Linux / macOS — Install-Script, Schlüssel entsteht auf dem Zielrechner: "
+        "Der PrivateKey wird erst auf dem Zielrechner erzeugt und nur der "
+        "PublicKey beim Server registriert – der Server speichert keinen "
+        "PrivateKey (empfohlen). Das Script installiert WireGuard selbst "
+        "(apt bzw. Homebrew) und richtet den Autostart ein.\n"
+        "• Linux / macOS — Install-Script, Schlüssel kommt vom Server: Gleiches "
+        "Script, aber mit dem in Odoo gespeicherten PrivateKey. Der Zielrechner "
+        "muss keinen Schlüssel registrieren.\n"
+        "• WireGuard-App (Handy / Mac / Windows) — fertige .conf-Datei: Server "
+        "erzeugt das Schlüsselpaar und liefert die komplette .conf inkl. "
+        "PrivateKey zum Import in die WireGuard-App. Nötig für Clients, die kein "
+        "Script ausführen können (z. B. iPhone) – der PrivateKey verlässt dabei "
+        "den Server.",
     )
     ip_history_ids = fields.One2many(
         "ovpn.member.ip.history", "member_id", string="IP History"

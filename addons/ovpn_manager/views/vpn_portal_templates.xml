@@ -176,14 +176,19 @@
             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
             <label for="password">Password</label>
             <input type="password" id="password" name="password" autofocus="1" required="1" placeholder="Enter password"/>
-            <button type="submit"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/></svg>
-              Download
+            <button type="submit">
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/>
+              </svg>
+              <t t-if="is_script">Install-Script herunterladen (.sh)</t>
+              <t t-else="">.conf-Datei herunterladen</t>
             </button>
             <t t-if="show_tcp">
               <button type="submit" name="config_type" value="tcp" class="btn-tcp"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/><circle cx="12" cy="12" r="9"/></svg>
-              Download TCP Config
+              .conf-Datei f&#xFC;r TCP/443 herunterladen
             </button>
-              <p class="tcp-note">Slower, but may work better in hotels / when travelling.</p>
+              <p class="tcp-note">Langsamer, kommt aber durch Netze, die nur TCP 443 erlauben
+                (Hotel, Gastnetz). Setzt voraus, dass der wstunnel-Client lokal l&#xE4;uft.</p>
             </t>
           </form>
           <div class="install-section">

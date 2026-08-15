@@ -167,10 +167,12 @@ echo "WireGuard '{iface}' installed. VPN IP: {vpn_ip}"
                 # hand, is genuinely Linux-only (apt-get/wg-quick). This flag lets
                 # the template show the right guide for each case.
                 "is_client_key_script": member.delivery_mode == "script_client_key",
-                # WireGuard members (incl. keyless provisioning, where wg_config is
-                # empty by design) can use the TCP/WSS mode. A WG site has a server
-                # public key; OpenVPN-only members do not.
-                "show_tcp": bool(member.wg_config) or bool(site.wg_server_public_key),
+                # The TCP/WSS config points the Endpoint at a local wstunnel
+                # client, which only gets installed when the member is flagged
+                # for wstunnel. Offering the button to everybody handed out
+                # configs that can never handshake (Endpoint 127.0.0.1, no
+                # wstunnel running), so it follows the flag now.
+                "show_tcp": member.use_wstunnel,
             },
         )
 
