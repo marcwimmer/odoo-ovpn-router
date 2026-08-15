@@ -25,6 +25,17 @@
                   <field name="wg_server_port"/>
                   <field name="wg_allowed_ips"/>
                 </group>
+                <group string="Split DNS">
+                  <field name="wg_dns" placeholder="10.222.0.1"/>
+                  <field name="wg_dns_upstream" placeholder="leave empty to use the server's resolver"/>
+                </group>
+                <field name="dns_record_ids" nolabel="1" context="{'default_site_id': id}">
+                  <tree editable="bottom">
+                    <field name="name"/>
+                    <field name="ip_address"/>
+                    <field name="note"/>
+                  </tree>
+                </field>
                 <group string="wstunnel (TCP fallback for UDP-blocked clients)">
                   <field name="wstunnel_host"/>
                   <field name="wstunnel_port"/>
