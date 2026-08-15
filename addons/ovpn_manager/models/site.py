@@ -320,6 +320,25 @@ class OvpnSite(models.Model):
     wg_allowed_ips = fields.Char(
         "WireGuard Allowed IPs", default="10.222.0.0/22,10.8.0.0/16"
     )
+    wg_dns = fields.Char(
+        "WireGuard DNS",
+        help="Optional. Resolver written as 'DNS = ...' into the client config, "
+        "usually the server's own tunnel address (10.222.0.1). Needed to make "
+        "the overrides below take effect on clients that cannot carry a hosts "
+        "file, e.g. iOS. Beware: WireGuard on iOS/macOS has no split DNS - "
+        "while the tunnel is up, *every* lookup of that client goes here, so "
+        "the resolver must forward everything else and must stay available. "
+        "Leave empty to keep the client's own resolver.",
+    )
+    wg_dns_upstream = fields.Char(
+        "DNS Upstream",
+        help="Optional, comma separated. Where the resolver forwards "
+        "everything that is not overridden below. Empty means it uses the "
+        "server's own /etc/resolv.conf, which is the sane default.",
+    )
+    dns_record_ids = fields.One2many(
+        "ovpn.dns.record", "site_id", string="DNS Overrides"
+    )
     wstunnel_host = fields.Char(
         "wstunnel Host",
         default="vpn.zebroo.de",
@@ -406,6 +425,15 @@ class OvpnSite(models.Model):
             "clients": self.member_ids.filtered(lambda x: not x.is_master)._get_json(),
             "masters": self.member_ids.filtered(lambda x: x.is_master)._get_json(),
             "remotes_per_client": remotes_per_client,
+            # Split DNS: the server resolves these names itself instead of
+            # letting them go out to the public resolver. Written even when
+            # empty, so removing the last record actually clears it on the
+            # server side.
+            "dns": {
+                "listen": self.wg_dns or "",
+                "upstream": self.wg_dns_upstream or "",
+                "records": self.dns_record_ids._get_json(),
+            },
             # ????
             "ccdroutes": {"master": []},
             "create_date": fields.Datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
