@@ -100,6 +100,13 @@ class OvpnMember(models.Model):
     )
     ip_address = fields.Char("IP Address")
     is_master = fields.Boolean("Is Master")
+    full_tunnel = fields.Boolean(
+        "Gesamten Internetverkehr durch VPN schicken",
+        help="Der Client bekommt AllowedIPs = 0.0.0.0/0 und darf auf dem Server "
+        "ins Internet raus (NAT). Ohne die Option laeuft nur der Verkehr ins "
+        "VPN-Netz durch den Tunnel (Split-Tunnel), alles andere geht direkt. "
+        "Sinnvoll fuer Notebooks/Handys im Ausland oder in fremden WLANs.",
+    )
     force_remote = fields.Char("Force Remote", help="e.g. 127.0.0.1 1194")
     cert_content = fields.Binary(
         "Certificate Content", compute="_cert_content", attachment=True
@@ -308,6 +315,10 @@ class OvpnMember(models.Model):
             self._apply_delivery_mode()
         elif "deliver_full_conf" in vals and vals.get("deliver_full_conf"):
             self._ensure_iphone_keypair()
+            self._sync_server_config()
+        if "full_tunnel" in vals:
+            # Die Freigabe steht in settings.json (internet_clients) und wird
+            # vom Server-Container erst beim Reload zu iptables-Regeln.
             self._sync_server_config()
         return result
 
@@ -627,6 +638,18 @@ class OvpnMember(models.Model):
             else:
                 rec.temp_download_link = f"{url}/vpn/temp/{rec.temp_hash}"
 
+    def _get_allowed_ips(self):
+        """Was der Client routen soll. Mit full_tunnel die Default-Route,
+        sonst der Site-Default (Split-Tunnel, nur das VPN-Netz).
+
+        Kein ::/0 dabei - IPv6 haben wir im Tunnel nicht, und ein Client, der
+        v6 in den Tunnel schiebt, verliert damit nur die Verbindung.
+        """
+        self.ensure_one()
+        if self.full_tunnel:
+            return "0.0.0.0/0"
+        return self.site_id.wg_allowed_ips or "10.222.0.0/22"
+
     @api.depends(
         "wg_private_key",
         "wg_public_key",
@@ -638,6 +661,7 @@ class OvpnMember(models.Model):
         "site_id.wg_allowed_ips",
         "site_id.netmask_int",
         "site_id.wg_dns",
+        "full_tunnel",
     )
     def _compute_wg_config(self):
         for rec in self:
@@ -650,7 +674,7 @@ class OvpnMember(models.Model):
                 rec.wg_config = False
                 continue
             prefix = rec.site_id.netmask_int or 32
-            allowed = rec.site_id.wg_allowed_ips or "10.222.0.0/22"
+            allowed = rec._get_allowed_ips()
             port = rec.site_id.wg_server_port or 51820
             # PSK is only emitted when the member has a wg_public_key — that's
             # the marker for "server-side peer config also carries PSK"
@@ -986,7 +1010,7 @@ done
 
         iface = site.wg_interface_name or "zebroo"
         prefix = site.netmask_int or 32
-        allowed = site.wg_allowed_ips or "10.222.0.0/22"
+        allowed = self._get_allowed_ips()
         # Kept as a whole line so an unset resolver leaves no empty "DNS ="
         # behind - wg-quick refuses to start on that.
         dns_line = f"DNS = {site.wg_dns.strip()}\n" if site.wg_dns else ""
