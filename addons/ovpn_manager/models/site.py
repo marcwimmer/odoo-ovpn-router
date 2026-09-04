@@ -424,6 +424,13 @@ class OvpnSite(models.Model):
             "custom_routes": (self.group_ids._get_json()),
             "clients": self.member_ids.filtered(lambda x: not x.is_master)._get_json(),
             "masters": self.member_ids.filtered(lambda x: x.is_master)._get_json(),
+            # Members, die ihren gesamten Verkehr durch den Tunnel schicken
+            # duerfen. Der Server macht daraus je Client eine ACCEPT-Regel ins
+            # Internet plus NAT. Bewusst nicht pauschal fuer alle Peers, sonst
+            # waere der Server ein offener Exit-Node fuer die ganze Flotte.
+            "internet_clients": self.member_ids.filtered(
+                lambda x: x.full_tunnel
+            ).mapped("name"),
             "remotes_per_client": remotes_per_client,
             # Split DNS: the server resolves these names itself instead of
             # letting them go out to the public resolver. Written even when
