@@ -1,0 +1,84 @@
+<?xml version="1.0"?>
+<odoo>
+  <data noupdate="0">
+
+    <record id="infra_notify_event_tree" model="ir.ui.view">
+      <field name="name">infra.notify.event.tree</field>
+      <field name="model">infra.notify.event</field>
+      <field name="arch" type="xml">
+        <tree string="Infrastruktur-Meldungen" create="false"
+              decoration-danger="state == 'failed'"
+              decoration-muted="state == 'sent'">
+          <field name="create_date" string="Zeitpunkt"/>
+          <field name="title"/>
+          <field name="author_id"/>
+          <field name="priority"/>
+          <field name="state"/>
+          <field name="attempts" optional="hide"/>
+          <field name="send_error" optional="hide"/>
+        </tree>
+      </field>
+    </record>
+
+    <record id="infra_notify_event_form" model="ir.ui.view">
+      <field name="name">infra.notify.event.form</field>
+      <field name="model">infra.notify.event</field>
+      <field name="arch" type="xml">
+        <form string="Infrastruktur-Meldung" create="false" edit="false">
+          <sheet>
+            <h1><field name="title"/></h1>
+            <group>
+              <group>
+                <field name="create_date" string="Zeitpunkt"/>
+                <field name="author_id"/>
+                <field name="model_name"/>
+                <field name="res_id"/>
+              </group>
+              <group>
+                <field name="priority"/>
+                <field name="tags"/>
+                <field name="state"/>
+                <field name="attempts"/>
+                <field name="sent_on"/>
+                <field name="send_error"/>
+              </group>
+            </group>
+            <field name="body" widget="text"/>
+          </sheet>
+        </form>
+      </field>
+    </record>
+
+    <record id="infra_notify_event_search" model="ir.ui.view">
+      <field name="name">infra.notify.event.search</field>
+      <field name="model">infra.notify.event</field>
+      <field name="arch" type="xml">
+        <search>
+          <field name="title"/>
+          <field name="body"/>
+          <field name="author_id"/>
+          <filter name="not_sent" string="Nicht zugestellt"
+                  domain="[('state', '!=', 'sent')]"/>
+          <filter name="loud" string="Hohe Prioritaet"
+                  domain="[('priority', 'in', ['high', 'urgent'])]"/>
+          <group expand="0" string="Gruppieren nach">
+            <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+            <filter name="group_author" string="Geaendert von" context="{'group_by': 'author_id'}"/>
+          </group>
+        </search>
+      </field>
+    </record>
+
+    <record id="infra_notify_event_action" model="ir.actions.act_window">
+      <field name="name">Infrastruktur-Meldungen</field>
+      <field name="res_model">infra.notify.event</field>
+      <field name="view_mode">tree,form</field>
+      <field name="search_view_id" ref="infra_notify_event_search"/>
+    </record>
+
+    <menuitem parent="menu_root" id="menu_infra_notify_event"
+              action="infra_notify_event_action" sequence="90"
+              groups="ovpn_manager.group_ovpn_manager"/>
+
+  </data>
+</odoo>

@@ -5,6 +5,13 @@ import itertools
 
 class OvpnGroups(models.Model):
     _name = "ovpn.group"
+    _inherit = ["infra.notify.mixin"]
+
+    # A group is what lets two members reach each other, so its membership
+    # is the VPN equivalent of a hostgroup on the SSH side.
+    _infra_kind = "VPN-Gruppe"
+    _infra_fields = ("name", "member_ids", "site_id")
+    _infra_high_fields = ("member_ids",)
 
     name = fields.Char("Name", required=True)
     member_ids = fields.Many2many("ovpn.member", string="Members")
