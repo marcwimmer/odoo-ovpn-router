@@ -282,7 +282,21 @@ def _generate_password():
 
 class OvpnSite(models.Model):
     _name = "ovpn.site"
-    _inherit = ["mail.thread"]
+    _inherit = ["mail.thread", "infra.notify.mixin"]
+
+    _infra_kind = "VPN-Site"
+    # Routing decides what the tunnel can reach at all, so it outranks
+    # everything else configured here.
+    _infra_fields = (
+        "name",
+        "net",
+        "remote",
+        "remote_port",
+        "wg_allowed_ips",
+        "wg_dns",
+        "wg_server_port",
+    )
+    _infra_high_fields = ("net", "wg_allowed_ips")
 
     name = fields.Char("Name")
 

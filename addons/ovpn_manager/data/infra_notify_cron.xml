@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<odoo>
+  <data noupdate="1">
+    <record id="cron_infra_notify_send" model="ir.cron">
+      <field name="name">Infra Notify: unzugestellte Meldungen nachliefern</field>
+      <field name="model_id" ref="model_infra_notify_event"/>
+      <field name="state">code</field>
+      <field name="code">model._cron_send_pending()</field>
+      <field name="interval_number">15</field>
+      <field name="interval_type">minutes</field>
+      <field name="numbercall">-1</field>
+      <field name="doall" eval="False"/>
+      <field name="active" eval="True"/>
+      <field name="user_id" ref="base.user_root"/>
+    </record>
+
+    <record id="cron_infra_notify_digest" model="ir.cron">
+      <field name="name">Infra Notify: Tagesrueckblick</field>
+      <field name="model_id" ref="model_infra_notify_event"/>
+      <field name="state">code</field>
+      <field name="code">model._cron_digest()</field>
+      <field name="interval_number">1</field>
+      <field name="interval_type">days</field>
+      <field name="numbercall">-1</field>
+      <field name="doall" eval="False"/>
+      <field name="active" eval="True"/>
+      <field name="user_id" ref="base.user_root"/>
+    </record>
+  </data>
+</odoo>

@@ -84,7 +84,35 @@ _TEMP_NOUNS = [
 
 class OvpnMember(models.Model):
     _name = "ovpn.member"
+    _inherit = ["infra.notify.mixin"]
     _order = "is_master, ip_address_sortable"
+
+    _infra_kind = "VPN-Member"
+    _infra_fields = (
+        "name",
+        "site_id",
+        "partner_id",
+        "active",
+        "ip_address",
+        "wg_public_key",
+        "cert_content",
+        "full_tunnel",
+        "bypass_network_check",
+        "wg_deploy_hash",
+        "download_hash",
+        "temp_hash",
+    )
+    # full_tunnel routes the whole internet through us and
+    # bypass_network_check waives a guard - both are decisions somebody
+    # should be able to object to, not settings that quietly appear.
+    _infra_high_fields = (
+        "wg_public_key",
+        "cert_content",
+        "full_tunnel",
+        "bypass_network_check",
+    )
+    # Handing out a link is news; the minute-cron clearing it again is not.
+    _infra_only_when_set = ("wg_deploy_hash", "download_hash", "temp_hash")
 
     active = fields.Boolean("Active", default=True)
     name = fields.Char("Name", required=True)
@@ -1391,3 +1419,13 @@ done
                 rec.download_link = (
                     (url or "") + "/download/byhash/vpn/" + rec.download_hash
                 )
+
+    def _infra_value_repr(self, fname):
+        if fname == "wg_public_key":
+            # Enough to tell two keys apart, not enough to be the key.
+            return "…%s" % self.wg_public_key[-10:] if self.wg_public_key else ""
+        if fname == "cert_content":
+            return "hinterlegt" if self.cert_content else ""
+        if fname in ("wg_deploy_hash", "download_hash", "temp_hash"):
+            return bool(self[fname])
+        return super()._infra_value_repr(fname)
