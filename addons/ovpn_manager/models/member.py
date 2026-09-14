@@ -285,7 +285,9 @@ class OvpnMember(models.Model):
     def _cert_content(self):
         for rec in self:
             file = Path(os.getenv("OVPN_DATA")) / "clients" / f"{rec.name}.conf"
-            rec.cert_content = file.read_bytes()
+            # Bei einem frisch angelegten Member (und bei reinen WireGuard-Members)
+            # gibt es noch keine OpenVPN-Client-Datei.
+            rec.cert_content = file.read_bytes() if file.exists() else False
 
     @api.constrains("ip_address")
     def _check_ip(self):
