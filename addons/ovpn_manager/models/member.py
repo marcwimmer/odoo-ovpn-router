@@ -494,8 +494,10 @@ class OvpnMember(models.Model):
         return res
 
     def download_vpn_link(self):
-        url = self.env["ir.config_parameter"].get_param(
-            key="web.base.url", default=False
+        url = (
+            self.env["ir.config_parameter"]
+            .sudo()
+            .get_param(key="web.base.url", default=False)
         )
         time = self._get_time_for_hash()
         url += f"/download/byhash/vpn/{self.download_hash}"
@@ -512,9 +514,9 @@ class OvpnMember(models.Model):
             self.download_hash_clear_date = self.download_expiry
         else:
             expiration_minutes = int(
-                self.env["ir.config_parameter"].get_param(
-                    key="ovpn.download_hash_expiration_time", default=30
-                )
+                self.env["ir.config_parameter"]
+                .sudo()
+                .get_param(key="ovpn.download_hash_expiration_time", default=30)
             )
             self.download_hash_clear_date = (
                 arrow.utcnow()
@@ -744,9 +746,9 @@ class OvpnMember(models.Model):
         self.ensure_one()
         self.wg_deploy_hash = self._generate_temp_hash()
         expiration_minutes = int(
-            self.env["ir.config_parameter"].get_param(
-                key="ovpn.wg_deploy_hash_expiration_time", default=10
-            )
+            self.env["ir.config_parameter"]
+            .sudo()
+            .get_param(key="ovpn.wg_deploy_hash_expiration_time", default=10)
         )
         self.wg_deploy_hash_expiry = (
             arrow.utcnow()
