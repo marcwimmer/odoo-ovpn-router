@@ -18,6 +18,9 @@
             <group>
               <field name="site_id"/>
             </group>
+            <group string="Hubs" col="2">
+              <field name="hub_member_ids"/>
+            </group>
             <group string="Members" col="2">
               <field name="member_ids"/>
             </group>
