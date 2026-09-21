@@ -11,7 +11,7 @@
           <field name="name"/>
           <field name="ip_address"/>
           <field name="partner_id"/>
-          <field name="is_master"/>
+          <field name="is_master" readonly="1"/>
           <field name="force_remote"/>
           <field name="download_link"/>
           <field name="create_date"/>

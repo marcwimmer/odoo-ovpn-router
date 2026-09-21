@@ -127,7 +127,12 @@ class OvpnMember(models.Model):
         "IP Address", compute="_compute_ip_address", store=True
     )
     ip_address = fields.Char("IP Address")
-    is_master = fields.Boolean("Is Master")
+    # A master gets iptables rules to every other client on the server, so
+    # the flag hands out access to the whole VPN at once. Too much for a
+    # checkbox somebody ticks in passing: it is read-only now, still shown
+    # on the records that have it, but not handed out through the UI any
+    # more. Existing masters keep their access.
+    is_master = fields.Boolean("Is Master", readonly=True)
     full_tunnel = fields.Boolean(
         "Gesamten Internetverkehr durch VPN schicken",
         help="Der Client bekommt AllowedIPs = 0.0.0.0/0 und darf auf dem Server "
