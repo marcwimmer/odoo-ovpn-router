@@ -436,8 +436,13 @@ class OvpnSite(models.Model):
             "remote_port": self.remote_port,
             "remote": self.remote,
             "custom_routes": (self.group_ids._get_json()),
-            "clients": self.member_ids.filtered(lambda x: not x.is_master)._get_json(),
-            "masters": self.member_ids.filtered(lambda x: x.is_master)._get_json(),
+            # Everybody is a plain client now. A master used to get iptables
+            # rules to every other peer at once - that access is modelled as
+            # a normal group with hubs instead, where it is visible and can
+            # be revoked per machine. The key stays in the file because
+            # apply-clients.py reads settings["masters"] without a fallback.
+            "clients": self.member_ids._get_json(),
+            "masters": {},
             # Members, die ihren gesamten Verkehr durch den Tunnel schicken
             # duerfen. Der Server macht daraus je Client eine ACCEPT-Regel ins
             # Internet plus NAT. Bewusst nicht pauschal fuer alle Peers, sonst
