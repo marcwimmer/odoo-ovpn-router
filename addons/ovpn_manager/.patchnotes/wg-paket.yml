@@ -1,0 +1,15 @@
+type: minor
+breaking: false
+description: |
+  Member mit Auslieferungsart „Install-Script, Schlüssel kommt vom Server“ haben
+  im Formular den neuen Button „Paket auf Server ablegen“. Er legt install.sh und
+  README.txt in einem nur für root lesbaren Ordner auf dem VPN-Server ab
+  (Standard: $OVPN_DATA/wg-packages/member-<ID>-<Name>). Der Installer darf
+  beliebig oft laufen: gleiche Config bleibt, eine abweichende Config führt zum
+  Abbruch (ersetzen nur mit --force, mit Sicherung). Es wird kein neuer
+  Schlüssel erzeugt und nichts registriert.
+  Testen: Member auf diese Auslieferungsart stellen, „Apply to VPN Server“,
+  „Paket auf Server ablegen“, dann auf dem Zielsystem bash install.sh zweimal
+  ausführen. Der zweite Lauf meldet „unverändert“.
+  Member mit wstunnel bekommen kein Paket (klare Meldung, Deploy-Link nutzen).
+  Bisheriger Deploy-Link und Script-Vorschau verhalten sich wie vorher.

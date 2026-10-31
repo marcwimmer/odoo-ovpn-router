@@ -1,4 +1,5 @@
 <?xml version="1.0"?>
+<!-- Part of Zebroo GmbH. See LICENSE file for full copyright and licensing details (www.zebroo.de/license). -->
 <odoo>
   <data noupdate="0">
     <record id="ovpn_member_form" model="ir.ui.view">
@@ -9,6 +10,7 @@
           <header>
             <button name="download" string="Download" icon="fa-download" type="object" class="btn-primary"/>
             <button name="generate_wg_deploy_link" string="WireGuard Deploy Link" icon="fa-terminal" type="object" attrs="{'invisible': [('wg_private_key', '=', False)]}"/>
+            <button name="action_export_wg_package" string="Paket auf Server ablegen" icon="fa-archive" type="object" attrs="{'invisible': ['|', ('delivery_mode', '!=', 'script_server_key'), ('wg_private_key', '=', False)]}" confirm="Installationspaket mit privatem Schl&#xFC;ssel im gesch&#xFC;tzten Verzeichnis auf dem VPN-Server ablegen?"/>
             <button name="apply_site" string="Apply to VPN Server" icon="fa-check" type="object" class="btn-secondary"/>
           </header>
           <sheet>

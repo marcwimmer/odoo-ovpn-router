@@ -1,3 +1,4 @@
+# Part of Zebroo GmbH. See LICENSE file for full copyright and licensing details (www.zebroo.de/license).
 import os
 from odoo.tools import DEFAULT_SERVER_DATETIME_FORMAT
 from odoo.tools import DEFAULT_SERVER_DATE_FORMAT
@@ -6,12 +7,13 @@ from pathlib import Path
 from odoo import _, api, fields, models, SUPERUSER_ID
 from pathlib import Path
 import arrow
-from odoo.exceptions import UserError, RedirectWarning, ValidationError
+from odoo.exceptions import AccessError, UserError, RedirectWarning, ValidationError
 import ipaddress
 import hashlib
 import random
 import re
 import string
+import tempfile
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -757,6 +759,164 @@ class OvpnMember(models.Model):
                 .strftime(DEFAULT_SERVER_DATETIME_FORMAT)
             )
 
+    def _get_wg_package_dirs(self):
+        """Where packages are written (as seen by Odoo) and how that place is
+        called on the host, so the admin is told a path he can actually use.
+
+        Default is ``$OVPN_DATA/wg-packages``: an existing, persistent mount
+        that is not part of any git checkout.
+        """
+        params = self.env["ir.config_parameter"].sudo()
+        write_dir = params.get_param("ovpn.wg_package_dir")
+        if not write_dir:
+            base = os.getenv("OVPN_DATA")
+            if not base:
+                raise UserError(
+                    _(
+                        "Kein Paketverzeichnis konfiguriert: weder der "
+                        "Systemparameter 'ovpn.wg_package_dir' noch OVPN_DATA "
+                        "ist gesetzt."
+                    )
+                )
+            write_dir = str(Path(base) / "wg-packages")
+        host_dir = params.get_param("ovpn.wg_package_host_dir") or write_dir
+        return Path(write_dir), host_dir
+
+    def _wg_package_name(self):
+        """Folder name bound to the immutable record id; the name part is only
+        a readable hint. No dots are allowed, so '.'/'..' cannot come out of it,
+        and two members can never share a folder."""
+        self.ensure_one()
+        hint = re.sub(r"[^A-Za-z0-9_-]", "_", self.name or "")[:40]
+        return f"member-{self.id}-{hint}" if hint else f"member-{self.id}"
+
+    @staticmethod
+    def _ensure_private_dir(path, parent=None):
+        """Create (or reuse) a root-only directory. Refuses symlinks and, when
+        a parent is given, anything that does not sit directly inside it."""
+        path.mkdir(mode=0o700, parents=parent is None, exist_ok=True)
+        if path.is_symlink() or not path.is_dir():
+            raise UserError(
+                _("Paketverzeichnis %s ist kein echtes Verzeichnis.") % path
+            )
+        if parent is not None and path.resolve().parent != parent.resolve():
+            raise UserError(
+                _("Paketpfad %s liegt außerhalb des Paketverzeichnisses.") % path
+            )
+        os.chmod(path, 0o700)
+
+    def _wg_package_readme(self, host_path):
+        self.ensure_one()
+        iface = self.site_id.wg_interface_name or "zebroo"
+        return (
+            f"WireGuard-Anschluss '{self.name}' (VPN-IP {self.ip_address})\n"
+            f"\n"
+            f"Inhalt: install.sh mit fertiger Konfiguration inkl. privatem "
+            f"Schlüssel.\n"
+            f"Die Datei vertraulich behandeln und nur an das Zielsystem "
+            f"weitergeben.\n"
+            f"\n"
+            f"Installation auf dem Zielsystem (als root):\n"
+            f"  1. Ordner kopieren, z.B.:\n"
+            f"     scp -r <vpn-server>:{host_path} /root/\n"
+            f"  2. bash /root/{Path(host_path).name}/install.sh\n"
+            f"\n"
+            f"Das Script darf beliebig oft laufen:\n"
+            f"  - gleiche Konfiguration vorhanden -> keine Änderung\n"
+            f"  - andere Konfiguration vorhanden  -> Abbruch ohne Änderung;\n"
+            f"    bewusst ersetzen mit: bash install.sh --force\n"
+            f"    (die alte Datei wird vorher gesichert)\n"
+            f"  - es wird nie ein neuer Schlüssel erzeugt und nichts "
+            f"registriert.\n"
+            f"\n"
+            f"Verbindung prüfen: wg show {iface}  (Zeile 'latest handshake')\n"
+            f"Danach die Paketkopie auf dem Zielsystem löschen.\n"
+        )
+
+    @staticmethod
+    def _write_private_file(path, content, mode):
+        """Write atomically: a uniquely named temp file is created exclusively
+        (0600) in the target directory, gets its final mode before any content
+        is written, and is then renamed over the target. A symlink at the
+        target is replaced, never followed; parallel exports cannot collide."""
+        fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.")
+        try:
+            os.fchmod(fd, mode)
+            with os.fdopen(fd, "w") as handle:
+                handle.write(content)
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(tmp, path)
+        except BaseException:
+            if os.path.lexists(tmp):
+                os.unlink(tmp)
+            raise
+
+    def action_export_wg_package(self):
+        """Write a ready-to-install package (install.sh + README.txt) for a
+        member with a server-side key into a root-only directory on the VPN
+        server. Admins of the target system pick it up there whenever it suits
+        them -- no short-lived link, no client-side key registration.
+
+        Reuses the stored keypair and wg_config; it never generates a key.
+        Exporting again with an unchanged key produces the same files.
+        """
+        self.ensure_one()
+        # Public method, so also reachable via RPC: the package holds a private
+        # key, only VPN managers may produce it.
+        if not self.env.user.has_group("ovpn_manager.group_ovpn_manager"):
+            raise AccessError(_("Nur VPN-Manager dürfen Pakete ablegen."))
+        self.check_access_rights("write")
+        self.check_access_rule("write")
+        if self.delivery_mode != "script_server_key":
+            raise UserError(
+                _(
+                    "Ein Paket gibt es nur für die Auslieferungsart "
+                    "'Install-Script, Schlüssel kommt vom Server'."
+                )
+            )
+        if not self.wg_private_key or not self.wg_config:
+            raise UserError(
+                _("Member %s hat noch keinen serverseitigen Schlüssel.") % self.name
+            )
+        # The wstunnel part of the installer rewrites binary and service on
+        # every run, so the package would not be safe to re-run. Refuse
+        # instead of shipping something that only looks repeatable.
+        if self.use_wstunnel:
+            raise UserError(
+                _(
+                    "Für Member mit wstunnel (TCP/443) gibt es noch kein "
+                    "wiederholbares Paket. Bitte den Deploy-Link verwenden."
+                )
+            )
+        root, host_root = self._get_wg_package_dirs()
+        name = self._wg_package_name()
+        target = root / name
+        host_path = str(Path(host_root) / name)
+        self._ensure_private_dir(root)
+        self._ensure_private_dir(target, parent=root)
+        self._write_private_file(
+            target / "install.sh", self._build_install_script(package=True), 0o700
+        )
+        self._write_private_file(
+            target / "README.txt", self._wg_package_readme(host_path), 0o600
+        )
+        _logger.info("WireGuard package for member %s written to %s", self.id, target)
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": _("Paket bereitgestellt"),
+                "message": _(
+                    "Auf dem VPN-Server unter %s (nur root lesbar). "
+                    "Installation: bash install.sh im kopierten Ordner."
+                )
+                % host_path,
+                "type": "success",
+                "sticky": True,
+            },
+        }
+
     @api.depends(
         "wg_config",
         "wg_private_key",
@@ -783,7 +943,15 @@ class OvpnMember(models.Model):
             except Exception:
                 rec.install_script_preview = False
 
-    def _build_install_script(self):
+    def _build_install_script(self, package=False):
+        """Install script with the server-side key embedded.
+
+        ``package=True`` builds the variant for the server-side package
+        (see ``action_export_wg_package``): it may run any number of times,
+        never replaces an existing, different config unless called with
+        ``--force`` (the old file is backed up), only installs WireGuard when
+        it is missing, and never prints the config (it holds the PrivateKey).
+        """
         self.ensure_one()
         if not self.wg_config:
             raise UserError(_("Member %s has no WireGuard config yet.") % self.name)
@@ -796,8 +964,7 @@ class OvpnMember(models.Model):
         if self.use_wstunnel:
             config = self._endpoint_to_localhost(config, port)
 
-        wg_install = f"""# --- WireGuard install ---
-case "$OS" in
+        wg_packages = f"""case "$OS" in
 Linux)
     if grep -qi 'buster' /etc/os-release 2>/dev/null; then
         cat > /etc/apt/sources.list << 'APT_EOF'
@@ -820,7 +987,78 @@ Darwin)
         fi
     fi
     ;;
-esac
+esac"""
+
+        enable_at_boot = f"""# Enable at boot
+if [ "$OS" = "Linux" ]; then
+    if command -v systemctl > /dev/null 2>&1 && systemctl is-system-running > /dev/null 2>&1; then
+        systemctl enable wg-quick@{iface}
+    else
+        if ! grep -q "auto {iface}" /etc/network/interfaces 2>/dev/null; then
+            printf '\\nauto {iface}\\niface {iface} inet manual\\n    pre-up wg-quick up {iface}\\n    post-down wg-quick down {iface}\\n' >> /etc/network/interfaces
+        fi
+    fi
+fi"""
+
+        if package:
+            wg_install = f"""# --- WireGuard install (package, safe to re-run) ---
+FORCE=0
+[ "${{1:-}}" = "--force" ] && FORCE=1
+
+if command -v wg-quick >/dev/null 2>&1; then
+    echo "==> WireGuard ist bereits installiert."
+else
+{wg_packages}
+fi
+
+# ZEBROO_WG_DIR only exists for tests; normal runs use the system default.
+WG_DIR=${{ZEBROO_WG_DIR:-/etc/wireguard}}
+[ "$OS" = "Darwin" ] && [ -z "${{ZEBROO_WG_DIR:-}}" ] && WG_DIR=/usr/local/etc/wireguard
+TARGET="$WG_DIR/{iface}.conf"
+umask 077
+mkdir -p "$WG_DIR"
+NEW_CONF=$(mktemp)
+trap 'rm -f "$NEW_CONF"' EXIT
+cat > "$NEW_CONF" << 'WG_CONFIG_EOF'
+{config}
+WG_CONFIG_EOF
+
+CHANGED=0
+if [ -f "$TARGET" ] && cmp -s "$NEW_CONF" "$TARGET"; then
+    echo "==> Konfiguration $TARGET ist bereits installiert und unverändert."
+elif [ -f "$TARGET" ] && [ "$FORCE" != 1 ]; then
+    echo "==> ABBRUCH: $TARGET existiert bereits mit anderem Inhalt" >&2
+    echo "    (anderer Schlüssel oder andere Einstellungen). Es wurde nichts geändert." >&2
+    echo "    Zum bewussten Ersetzen erneut mit --force aufrufen;" >&2
+    echo "    die bisherige Datei wird dann vorher gesichert." >&2
+    exit 3
+else
+    if [ -f "$TARGET" ]; then
+        BAK="$TARGET.bak-$(date +%Y%m%d-%H%M%S)"
+        cp -p "$TARGET" "$BAK"
+        echo "==> Bisherige Konfiguration gesichert: $BAK"
+    fi
+    install -m 600 "$NEW_CONF" "$TARGET"
+    CHANGED=1
+    echo "==> Konfiguration geschrieben: $TARGET"
+fi
+
+[ "$OS" = "Linux" ] && (modprobe wireguard 2>/dev/null || true)
+if [ "$CHANGED" = 1 ] || ! wg show {iface} >/dev/null 2>&1; then
+    wg-quick down "$TARGET" 2>/dev/null || true
+    wg-quick up "$TARGET"
+else
+    echo "==> Interface {iface} läuft bereits, kein Neustart nötig."
+fi
+
+{enable_at_boot}
+
+echo "==> Fertig. WireGuard '{iface}', VPN-IP {vpn_ip}."
+echo "    Verbindung prüfen: wg show {iface}  (Zeile 'latest handshake')"
+"""
+        else:
+            wg_install = f"""# --- WireGuard install ---
+{wg_packages}
 
 WG_DIR=/etc/wireguard
 [ "$OS" = "Darwin" ] && WG_DIR=/usr/local/etc/wireguard
@@ -834,16 +1072,7 @@ chmod 600 "$WG_DIR/{iface}.conf"
 wg-quick down {iface} 2>/dev/null || true
 wg-quick up {iface}
 
-# Enable at boot
-if [ "$OS" = "Linux" ]; then
-    if command -v systemctl > /dev/null 2>&1 && systemctl is-system-running > /dev/null 2>&1; then
-        systemctl enable wg-quick@{iface}
-    else
-        if ! grep -q "auto {iface}" /etc/network/interfaces 2>/dev/null; then
-            printf '\\nauto {iface}\\niface {iface} inet manual\\n    pre-up wg-quick up {iface}\\n    post-down wg-quick down {iface}\\n' >> /etc/network/interfaces
-        fi
-    fi
-fi
+{enable_at_boot}
 
 echo "WireGuard '{iface}' installed. VPN IP: {vpn_ip}"
 echo

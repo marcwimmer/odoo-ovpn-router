@@ -1,11 +1,11 @@
+# Part of Zebroo GmbH. See LICENSE file for full copyright and licensing details (www.zebroo.de/license).
 {
-    "application": False,
     "assets": {
         "web.assets_backend": [
             "ovpn_manager/static/src/scss/dashboard.scss",
         ],
     },
-    "author": "Marc Wimmer (marc@itewimmer.de)",
+    "author": "Zebroo GmbH (hello@zebroo.de)",
     "data": [
         "security/groups.xml",
         "security/ir.model.access.csv",
@@ -24,10 +24,10 @@
         "views/menu.xml",
         "views/infra_notify_views.xml",
     ],
-    "demo": [],
     "depends": ["base", "portal", "mail"],
     "external_dependencies": {"bin": [], "python": ["jingtrang", "ipaddress", "arrow"]},
+    "license": "Other proprietary",
     "name": "ovpn_manager",
-    "test": [],
-    "version": "16.0.1.4.0",
+    "summary": "Verwaltung von OpenVPN- und WireGuard-Zugängen samt Auslieferung",
+    "version": "16.0.1.5.0",
 }
