@@ -43,7 +43,7 @@ class TestWgPackage(TransactionCase):
         )
         cls.member = cls.env["ovpn.member"].create(
             {
-                "name": "backup test/1",
+                "name": "backup_test-1",
                 "site_id": cls.site.id,
                 "ip_address": "10.222.3.200",
                 "delivery_mode": "script_server_key",
@@ -90,7 +90,7 @@ class TestWgPackage(TransactionCase):
         readme = (package / "README.txt").read_text()
         self.assertNotIn(key_before, readme)
         self.assertIn(
-            f"/etc/ovpn.data/wg-packages/member-{self.member.id}-backup_test_1", readme
+            f"/etc/ovpn.data/wg-packages/member-{self.member.id}-backup_test-1", readme
         )
 
     def test_export_twice_gives_same_files(self):
@@ -116,17 +116,25 @@ class TestWgPackage(TransactionCase):
         self.assertFalse((self.root / "packages" / member._wg_package_name()).exists())
 
     def test_export_refused_for_wstunnel(self):
-        member = self._server_key_member("ws member", "10.222.3.42")
+        member = self._server_key_member("ws_member", "10.222.3.42")
         member.use_wstunnel = True
         with self.assertRaises(UserError):
             member.action_export_wg_package()
         self.assertFalse((self.root / "packages" / member._wg_package_name()).exists())
 
     def test_package_names_stay_inside_and_unique(self):
+        # The name constraint keeps such names out of the ORM; legacy rows or
+        # direct SQL can still carry them, so the export must hold on its own.
+        bad_names = [".", "..", "../../etc", "a/b", "a_b", "ä ö", ""]
         members = [
-            self._server_key_member(name, f"10.222.3.{20 + i}")
-            for i, name in enumerate([".", "..", "../../etc", "a/b", "a_b", "ä ö"])
+            self._server_key_member(f"legacy{i}", f"10.222.3.{20 + i}")
+            for i in range(len(bad_names))
         ]
+        for member, name in zip(members, bad_names):
+            self.env.cr.execute(
+                "UPDATE ovpn_member SET name = %s WHERE id = %s", (name, member.id)
+            )
+        self.env.invalidate_all()
         names = [m._wg_package_name() for m in members]
         self.assertEqual(len(set(names)), len(names))
         packages = self.root / "packages"
@@ -172,7 +180,7 @@ class TestWgPackage(TransactionCase):
                 "groups_id": [(6, 0, [self.env.ref("base.group_user").id])],
             }
         )
-        member = self._server_key_member("no access", "10.222.3.41")
+        member = self._server_key_member("no_access", "10.222.3.41")
         with self.assertRaises(AccessError):
             member.with_user(user).action_export_wg_package()
         self.assertFalse((self.root / "packages" / member._wg_package_name()).exists())
