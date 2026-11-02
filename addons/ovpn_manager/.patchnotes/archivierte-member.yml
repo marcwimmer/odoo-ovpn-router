@@ -1,0 +1,9 @@
+type: minor
+breaking: false
+description: |
+  Archivierte Member landen nicht mehr in der settings.json des VPN-Servers,
+  auch nicht als Teil einer Gruppe, egal wie die Erzeugung ausgelöst wurde.
+  Bisher konnte ein Aufruf mit active_test=False (etwa aus einem Shell-Skript)
+  archivierte Member wieder als WireGuard-Peer aktivieren.
+  Testen: einen Member in einer Gruppe archivieren, „Apply to VPN Server“; in
+  der settings.json taucht er weder unter clients noch unter custom_routes auf.
