@@ -421,9 +421,13 @@ class OvpnSite(models.Model):
 
     def _get_json(self):
         self.ensure_one()
+        # Filter on the field, not on the context: a caller that browsed the
+        # site with active_test=False would otherwise put archived members
+        # back into settings.json and the server would accept them as peers.
+        members = self.member_ids.filtered("active")
 
         remotes_per_client = {}
-        for member in self.member_ids.filtered(lambda x: x.force_remote):
+        for member in members.filtered(lambda x: x.force_remote):
             remotes_per_client[member.ip_address] = member.force_remote
 
         res = {
@@ -441,15 +445,15 @@ class OvpnSite(models.Model):
             # a normal group with hubs instead, where it is visible and can
             # be revoked per machine. The key stays in the file because
             # apply-clients.py reads settings["masters"] without a fallback.
-            "clients": self.member_ids._get_json(),
+            "clients": members._get_json(),
             "masters": {},
             # Members, die ihren gesamten Verkehr durch den Tunnel schicken
             # duerfen. Der Server macht daraus je Client eine ACCEPT-Regel ins
             # Internet plus NAT. Bewusst nicht pauschal fuer alle Peers, sonst
             # waere der Server ein offener Exit-Node fuer die ganze Flotte.
-            "internet_clients": self.member_ids.filtered(
-                lambda x: x.full_tunnel
-            ).mapped("name"),
+            "internet_clients": members.filtered(lambda x: x.full_tunnel).mapped(
+                "name"
+            ),
             "remotes_per_client": remotes_per_client,
             # Split DNS: the server resolves these names itself instead of
             # letting them go out to the public resolver. Written even when

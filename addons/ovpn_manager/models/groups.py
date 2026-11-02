@@ -38,12 +38,16 @@ class OvpnGroups(models.Model):
     def _get_json(self):
         res = []
         for group in self:
-            if group.hub_member_ids:
-                others = group.member_ids - group.hub_member_ids
-                for hub in group.hub_member_ids:
+            # Same reason as in ovpn.site._get_json: an archived member must not
+            # show up here, the server cannot resolve its name and fails.
+            members = group.member_ids.filtered("active")
+            hubs = group.hub_member_ids.filtered("active")
+            if hubs:
+                others = members - hubs
+                for hub in hubs:
                     for member in others:
                         res.append((hub.name, member.name))
             else:
-                for combo in itertools.combinations(group.member_ids, 2):
+                for combo in itertools.combinations(members, 2):
                     res.append((combo[0].name, combo[1].name))
         return list(set(res))
