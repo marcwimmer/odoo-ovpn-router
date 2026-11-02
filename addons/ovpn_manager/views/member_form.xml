@@ -71,7 +71,6 @@
               <field name="ip_address"/>
               <field name="bypass_network_check"/>
               <field name="partner_id"/>
-              <field name="is_master"/>
               <field name="full_tunnel"/>
               <field name="force_remote"/>
               <field name="use_wstunnel"/>

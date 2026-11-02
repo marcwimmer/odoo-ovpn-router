@@ -85,7 +85,7 @@ _TEMP_NOUNS = [
 class OvpnMember(models.Model):
     _name = "ovpn.member"
     _inherit = ["infra.notify.mixin"]
-    _order = "is_master, ip_address_sortable"
+    _order = "ip_address_sortable"
 
     _infra_kind = "VPN-Member"
     _infra_fields = (
@@ -127,7 +127,6 @@ class OvpnMember(models.Model):
         "IP Address", compute="_compute_ip_address", store=True
     )
     ip_address = fields.Char("IP Address")
-    is_master = fields.Boolean("Is Master")
     full_tunnel = fields.Boolean(
         "Gesamten Internetverkehr durch VPN schicken",
         help="Der Client bekommt AllowedIPs = 0.0.0.0/0 und darf auf dem Server "
@@ -489,8 +488,10 @@ class OvpnMember(models.Model):
         return res
 
     def download_vpn_link(self):
-        url = self.env["ir.config_parameter"].get_param(
-            key="web.base.url", default=False
+        url = (
+            self.env["ir.config_parameter"]
+            .sudo()
+            .get_param(key="web.base.url", default=False)
         )
         time = self._get_time_for_hash()
         url += f"/download/byhash/vpn/{self.download_hash}"
@@ -507,9 +508,9 @@ class OvpnMember(models.Model):
             self.download_hash_clear_date = self.download_expiry
         else:
             expiration_minutes = int(
-                self.env["ir.config_parameter"].get_param(
-                    key="ovpn.download_hash_expiration_time", default=30
-                )
+                self.env["ir.config_parameter"]
+                .sudo()
+                .get_param(key="ovpn.download_hash_expiration_time", default=30)
             )
             self.download_hash_clear_date = (
                 arrow.utcnow()
@@ -739,9 +740,9 @@ class OvpnMember(models.Model):
         self.ensure_one()
         self.wg_deploy_hash = self._generate_temp_hash()
         expiration_minutes = int(
-            self.env["ir.config_parameter"].get_param(
-                key="ovpn.wg_deploy_hash_expiration_time", default=10
-            )
+            self.env["ir.config_parameter"]
+            .sudo()
+            .get_param(key="ovpn.wg_deploy_hash_expiration_time", default=10)
         )
         self.wg_deploy_hash_expiry = (
             arrow.utcnow()
