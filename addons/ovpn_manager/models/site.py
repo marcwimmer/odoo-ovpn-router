@@ -294,6 +294,7 @@ class OvpnSite(models.Model):
         "remote_port",
         "wg_allowed_ips",
         "wg_dns",
+        "wg_mtu",
         "wg_server_port",
     )
     _infra_high_fields = ("net", "wg_allowed_ips")
@@ -333,6 +334,14 @@ class OvpnSite(models.Model):
     wg_server_port = fields.Integer("WireGuard Port", default=51820)
     wg_allowed_ips = fields.Char(
         "WireGuard Allowed IPs", default="10.222.0.0/22,10.8.0.0/16"
+    )
+    wg_mtu = fields.Integer(
+        "WireGuard MTU",
+        default=1280,
+        help="Written as 'MTU = ...' into the client config. 1280 survives "
+        "mobile networks, DS-Lite and PPPoE, where the path behind the tunnel "
+        "is smaller than the usual 1420 and large packets get lost silently. "
+        "Set to 0 to leave the line out and let wg-quick pick the MTU.",
     )
     wg_dns = fields.Char(
         "WireGuard DNS",
@@ -412,6 +421,11 @@ class OvpnSite(models.Model):
             else:
                 rec.netmask = str(network.netmask)
                 rec.netmask_int = int(rec.net.split("/")[1])
+
+    def _wg_mtu_line(self):
+        """Return the 'MTU = ...' line for the client config, or '' if unset."""
+        self.ensure_one()
+        return f"MTU = {self.wg_mtu}\n" if self.wg_mtu > 0 else ""
 
     def generate_json(self):
         self.ensure_one()

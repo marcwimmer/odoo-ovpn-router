@@ -24,6 +24,7 @@
                   <field name="wg_server_public_key"/>
                   <field name="wg_server_port"/>
                   <field name="wg_allowed_ips"/>
+                  <field name="wg_mtu"/>
                 </group>
                 <group string="Split DNS">
                   <field name="wg_dns" placeholder="10.222.0.1"/>

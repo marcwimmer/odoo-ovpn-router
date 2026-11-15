@@ -247,3 +247,27 @@ class TestWgPackage(TransactionCase):
         backups = [p for p in wg_dir.iterdir() if ".bak-" in p.name]
         self.assertEqual(len(backups), 1)
         self.assertNotIn(key, forced.stdout + forced.stderr)
+
+    def test_client_config_carries_site_mtu(self):
+        # Default 1280 keeps large packets alive behind small path MTUs.
+        self.assertEqual(self.site.wg_mtu, 1280)
+        self.assertIn("\nMTU = 1280\n", self.member.wg_config)
+        self.site.wg_mtu = 1380
+        self.assertIn("\nMTU = 1380\n", self.member.wg_config)
+
+    def test_client_config_without_mtu_when_zero(self):
+        self.site.wg_mtu = 0
+        self.assertNotIn("MTU", self.member.wg_config)
+
+    def test_provisioning_script_carries_site_mtu(self):
+        member = self._server_key_member("mtu_test-1", "10.222.3.201")
+        member.write(
+            {
+                "wg_preshared_key": base64.b64encode(b"\x02" * 32).decode(),
+                "wg_register_token": "mtu-test-token",
+            }
+        )
+        script = member._build_provisioning_script()
+        self.assertIn("\nMTU = 1280\n", script)
+        self.site.wg_mtu = 0
+        self.assertNotIn("MTU =", member._build_provisioning_script())

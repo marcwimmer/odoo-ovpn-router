@@ -1,0 +1,10 @@
+type: minor
+breaking: false
+description: |
+  WireGuard-Site, Reiter „WireGuard“: neues Feld „WireGuard MTU“ (Standard 1280).
+  Der Wert landet als „MTU = …“ in jeder neu erzeugten Client-Config (Download,
+  QR-Code und Deploy-Skript). Damit bleiben große Pakete auf Geräten im
+  Mobilfunk, hinter DS-Lite oder PPPoE nicht mehr hängen. 0 lässt die Zeile weg.
+  Testen: Member öffnen, Config ansehen bzw. Deploy-Skript erzeugen, dort muss
+  unter [Interface] „MTU = 1280“ stehen. Bestehende Geräte behalten ihre Config,
+  bis sie neu ausgerollt werden.
