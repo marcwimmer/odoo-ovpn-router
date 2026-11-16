@@ -694,6 +694,7 @@ class OvpnMember(models.Model):
         "site_id.wg_allowed_ips",
         "site_id.netmask_int",
         "site_id.wg_dns",
+        "site_id.wg_mtu",
         "full_tunnel",
     )
     def _compute_wg_config(self):
@@ -724,11 +725,13 @@ class OvpnMember(models.Model):
             dns_line = ""
             if rec.site_id.wg_dns:
                 dns_line = f"DNS = {rec.site_id.wg_dns.strip()}\n"
+            mtu_line = rec.site_id._wg_mtu_line()
             rec.wg_config = (
                 f"[Interface]\n"
                 f"Address = {rec.ip_address}/{prefix}\n"
                 f"PrivateKey = {rec.wg_private_key.strip()}\n"
                 f"{dns_line}"
+                f"{mtu_line}"
                 f"\n"
                 f"[Peer]\n"
                 f"PublicKey = {rec.site_id.wg_server_public_key.strip()}\n"
@@ -1274,6 +1277,7 @@ done
         # Kept as a whole line so an unset resolver leaves no empty "DNS ="
         # behind - wg-quick refuses to start on that.
         dns_line = f"DNS = {site.wg_dns.strip()}\n" if site.wg_dns else ""
+        mtu_line = site._wg_mtu_line()
         port = site.wg_server_port or 51820
         server_pub = site.wg_server_public_key.strip()
         psk = self.wg_preshared_key.strip()
@@ -1357,7 +1361,7 @@ $SUDO tee "$WG_DIR/{iface}.conf" >/dev/null << WG_CONFIG_EOF
 [Interface]
 Address = {ip}/{prefix}
 PrivateKey = $PRIV
-{dns_line}
+{dns_line}{mtu_line}
 [Peer]
 PublicKey = {server_pub}
 PresharedKey = {psk}
