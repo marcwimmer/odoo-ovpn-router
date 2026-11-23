@@ -1,0 +1,13 @@
+type: minor
+breaking: false
+description: |
+  VPN-Gruppe, Formular: neuer Bereich „Rules“. Jede Zeile erlaubt genau eine
+  Verbindung: von Mitglied, zu Mitglied, Protokoll (TCP/UDP), Port. Die
+  Gegenseite darf antworten, aber keine eigene Verbindung aufbauen.
+  Ohne Regeln bleibt alles wie bisher: alle Ports in beide Richtungen.
+  Mit Regeln gelten nur diese, Hubs spielen dann keine Rolle.
+  Testen: Gruppe öffnen, Regel anlegen, „Apply to VPN Server“. In settings.json
+  steht die Regel unter „group_rules“, die Gruppe fehlt unter „custom_routes“.
+  Ein Mitglied außerhalb der Gruppe oder Port 0 wird abgelehnt.
+  Voraussetzung: auf dem VPN-Server läuft die apply-clients.py aus diesem Stand,
+  sonst ignoriert der Server die Regeln und die Gruppe ist ganz gesperrt.

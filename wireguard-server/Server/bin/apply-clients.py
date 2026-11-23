@@ -29,10 +29,6 @@ NETMASKINT = settings["netmaskint"]
 WG_NET    = os.environ.get("WG_NET", f"{NET}/{NETMASKINT}")
 WG_PREFIX = WG_NET.split("/")[1]  # e.g. "22" from "10.222.0.0/22"
 
-KEYS_DIR.mkdir(exist_ok=True, parents=True)
-CLIENTS_DIR.mkdir(exist_ok=True, parents=True)
-Path("/etc/wireguard").mkdir(exist_ok=True, parents=True)
-
 
 def wg_genkey():
     priv = subprocess.check_output(["wg", "genkey"]).decode().strip()
@@ -137,6 +133,24 @@ def build_iptables_script() -> str:
         lines.append(tmpl.format(_from=a_ip, _to=b_ip))
         lines.append(tmpl.format(_from=b_ip, _to=a_ip))
 
+    # Directed rules of groups that have them: only "from" may open a
+    # connection to "to" on this protocol and port. Replies pass through the
+    # ESTABLISHED,RELATED rule above, a new connection the other way round
+    # falls through to the DROP at the end. Missing key: older settings.json.
+    group_rules = settings.get("group_rules") or []
+    if group_rules:
+        lines.append("")
+        lines.append("# --- Group rules (directed) ---")
+    for rule in group_rules:
+        proto = rule["proto"]
+        if proto not in ("tcp", "udp"):
+            raise ValueError(f"Unsupported protocol in group rule: {rule!r}")
+        port = int(rule["port"])
+        lines.append(
+            f"iptables -A WG_FORWARD -i {WG_IFACE} -s {get_ip(rule['from'])} "
+            f"-d {get_ip(rule['to'])} -p {proto} --dport {port} -j ACCEPT"
+        )
+
     # Full-Tunnel: diese Clients duerfen ueber den Server ins Internet raus
     # (im Client muss dazu AllowedIPs = 0.0.0.0/0 stehen)
     internet_clients = settings.get("internet_clients") or []
@@ -159,6 +173,10 @@ def build_iptables_script() -> str:
 
 
 if __name__ == "__main__":
+    KEYS_DIR.mkdir(exist_ok=True, parents=True)
+    CLIENTS_DIR.mkdir(exist_ok=True, parents=True)
+    Path("/etc/wireguard").mkdir(exist_ok=True, parents=True)
+
     server_priv, server_pub = get_or_create_keypair("_server")
 
     # --- /etc/wireguard/<iface>.conf ---

@@ -454,6 +454,9 @@ class OvpnSite(models.Model):
             "remote_port": self.remote_port,
             "remote": self.remote,
             "custom_routes": (self.group_ids._get_json()),
+            # Directed rules (from, to, protocol, port) of groups that have
+            # them. Such a group adds no pair to custom_routes above.
+            "group_rules": self.group_ids._get_rules_json(),
             # Everybody is a plain client now. A master used to get iptables
             # rules to every other peer at once - that access is modelled as
             # a normal group with hubs instead, where it is visible and can
