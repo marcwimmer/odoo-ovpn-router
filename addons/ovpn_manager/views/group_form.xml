@@ -24,6 +24,17 @@
             <group string="Members" col="2">
               <field name="member_ids"/>
             </group>
+            <group string="Rules" col="1">
+              <div class="text-muted" colspan="2">Leer: alle Ports in beide Richtungen. Mit Regeln: nur diese Verbindungen, die Gegenseite darf nur antworten.</div>
+              <field name="rule_ids" nolabel="1" colspan="2">
+                <tree editable="bottom">
+                  <field name="from_member_id" domain="[('id', 'in', parent.member_ids)]"/>
+                  <field name="to_member_id" domain="[('id', 'in', parent.member_ids)]"/>
+                  <field name="protocol"/>
+                  <field name="port"/>
+                </tree>
+              </field>
+            </group>
           </sheet>
         </form>
       </field>

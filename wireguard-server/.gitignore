@@ -1,0 +1,5 @@
+# Instance data: written by ovpn_manager, contains keys. Never commit.
+.env
+settings/
+*.bak*
+__pycache__/
