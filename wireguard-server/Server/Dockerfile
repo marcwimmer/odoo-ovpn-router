@@ -1,6 +1,6 @@
 FROM debian:bookworm
 
-LABEL maintainer="marc@itewimmer.de"
+LABEL maintainer="Zebroo GmbH"
 
 WORKDIR /root
 

@@ -6,14 +6,18 @@ description: |
   Gegenseite darf antworten, aber keine eigene Verbindung aufbauen.
   Ohne Regeln bleibt alles wie bisher: alle Ports in beide Richtungen.
   Mit Regeln gelten nur diese, Hubs spielen dann keine Rolle.
+  „From“ und „To“ bieten nur Mitglieder der Gruppe an: ein neues Mitglied
+  zuerst unter „Members“ eintragen.
   Achtung: Wer die letzte Regel löscht, öffnet die Gruppe wieder ganz.
 
   Testen:
   1. VPN → Groups → Gruppe öffnen, Regel anlegen, Button „Apply to VPN Server“.
   2. In settings.json steht die Regel unter „group_rules“, die Gruppe fehlt
      unter „custom_routes“.
-  3. Vom Mitglied „From“ zum Mitglied „To“ auf dem Port verbinden: geht.
-     Von „To“ zu „From“ verbinden oder ein anderer Port: wird verworfen.
+  3. Vom Mitglied „From“ zum Mitglied „To“ auf dem Port verbinden, z. B.
+     `nc -vz <IP von To> <Port>` oder `ssh`: die Verbindung steht.
+     Von „To“ zu „From“ oder auf einem anderen Port: kein Fehler, sondern
+     ein Timeout, weil der Server das Paket still verwirft.
   4. Ein Mitglied außerhalb der Gruppe, dieselbe Regel doppelt, gleiches
      Mitglied bei „From“ und „To“ oder Port 0 wird beim Speichern abgelehnt.
 
