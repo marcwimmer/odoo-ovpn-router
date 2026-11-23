@@ -1,0 +1,26 @@
+services:
+  server:
+    build: ./Server
+    privileged: true
+    restart: unless-stopped
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    devices:
+      - /dev/net/tun
+    volumes:
+      - /etc/wg.data:/data
+      - type: bind
+        source: "/opt/wireguard_zebroo/settings"
+        target: /root/settings
+    environment:
+      - FOLDER_DATA=/data
+      - FOLDER_KEYS=/data/keys
+      - FOLDER_CLIENTS=/data/clients
+      - FILE_SETTINGS=/root/settings/settings.json
+      - WG_IFACE=wg1
+      - WG_NET=10.222.0.0/22
+    env_file:
+      - ./.env
+    command: /root/bin/run.sh
