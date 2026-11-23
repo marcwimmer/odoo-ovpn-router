@@ -6,7 +6,7 @@ configs, the `WG_FORWARD` iptables chain and the split DNS.
 
 | File | Purpose |
 | --- | --- |
-| `docker-compose.yml` | Container definition (host network, `/etc/wg.data` as `/data`) |
+| `compose.yml` | Container definition (host network, `/etc/wg.data` as `/data`) |
 | `bin/run.sh` | Build and (re)start the container on the host |
 | `Server/bin/run.sh` | Entry point in the container, watches `settings.json` |
 | `Server/bin/apply-clients.py` | WireGuard config and `iptables_rules.sh` |
@@ -21,3 +21,8 @@ configs, the `WG_FORWARD` iptables chain and the split DNS.
 ```sh
 python3 -m unittest discover -s wireguard-server/tests -v
 ```
+
+The compose file is named `compose.yml` on purpose: zodoo merges every
+`docker-compose*.yml` in the repo into the Odoo project, which would start the
+WireGuard container as part of Odoo. `docker compose` finds `compose.yml` on
+its own.
