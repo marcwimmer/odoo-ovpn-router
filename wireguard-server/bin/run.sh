@@ -6,4 +6,4 @@ cd "$DIR"
 docker compose build
 docker compose stop
 docker compose up -d
-echo "Logs: docker compose -f $DIR/docker-compose.yml logs -f"
+echo "Logs: docker compose -f $DIR/compose.yml logs -f"

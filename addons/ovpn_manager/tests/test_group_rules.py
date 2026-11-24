@@ -94,6 +94,13 @@ class TestGroupRules(TransactionCase):
         rules = {(r["from"], r["port"]) for r in self._json()["group_rules"]}
         self.assertEqual(rules, {("proxy_a", 80)})
 
+    def test_member_removed_from_group_left_out(self):
+        self._rule(self.proxy, self.app, 80)
+        self._rule(self.admin, self.app, 22)
+        self.group.member_ids = [(3, self.admin.id)]
+        rules = {(r["from"], r["port"]) for r in self._json()["group_rules"]}
+        self.assertEqual(rules, {("proxy_a", 80)})
+
     def test_member_outside_group_rejected(self):
         with self.assertRaises(ValidationError):
             self._rule(self.other, self.app, 22)

@@ -16,6 +16,14 @@ configs, the `WG_FORWARD` iptables chain and the split DNS.
 `settings.json` and `.env` stay on the server and are never committed:
 `settings.json` holds the peer keys. Copy `.env.example` to `.env`.
 
+## Live server
+
+The live server still builds the container from its own checkout
+(`/opt/wireguard_zebroo`); `compose.yml` mounts its `settings` folder.
+Until the build moves to this folder, change the code here first (PR), then
+copy the changed files to the server checkout and commit them there. Do not
+edit the server checkout alone, or the two copies drift apart.
+
 ## Tests
 
 ```sh

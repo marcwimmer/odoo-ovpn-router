@@ -91,6 +91,11 @@ class OvpnGroupRule(models.Model):
             # server and must not show up in settings.json.
             if not (rec.from_member_id.active and rec.to_member_id.active):
                 continue
+            # _check_members only runs when the rule changes. A member removed
+            # from the group later must lose its rules too, otherwise the
+            # server opens a path the member list does not show.
+            if (rec.from_member_id | rec.to_member_id) - rec.group_id.member_ids:
+                continue
             res.append(
                 {
                     "group": rec.group_id.name,
