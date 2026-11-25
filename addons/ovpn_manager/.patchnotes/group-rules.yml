@@ -8,7 +8,8 @@ description: |
   Mit Regeln gelten nur diese, Hubs spielen dann keine Rolle.
   „From“ und „To“ bieten nur Mitglieder der Gruppe an: ein neues Mitglied
   zuerst unter „Members“ eintragen.
-  Achtung: Wer die letzte Regel löscht, öffnet die Gruppe wieder ganz.
+  Mit der ersten Regel wird „Enforce rules“ gesetzt: Wer die letzte Regel
+  löscht, sperrt die Gruppe ganz (siehe Fragment gruppen-sperren).
 
   Testen:
   1. VPN → Groups → Gruppe öffnen, Regel anlegen, Button „Apply to VPN Server“.
@@ -22,9 +23,8 @@ description: |
      Mitglied bei „From“ und „To“ oder Port 0 wird beim Speichern abgelehnt.
 
   Weitere sichtbare Folgen:
-  - Regeln mit einem archivierten Mitglied oder einem Mitglied, das aus der
-    Gruppe entfernt wurde, gehen nicht mehr an den Server. Bleibt keine Regel
-    übrig, ist die Gruppe ganz gesperrt.
+  - Regeln mit einem archivierten Mitglied gehen nicht mehr an den Server.
+    Bleibt keine Regel übrig, ist die Gruppe ganz gesperrt.
   - Änderungen an den Regeln lösen wie Mitgliederänderungen eine
     Infra-Benachrichtigung aus.
 

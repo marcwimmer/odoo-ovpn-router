@@ -1,0 +1,29 @@
+type: minor
+breaking: false
+description: |
+  VPN → Groups → Gruppe öffnen: Eine Gruppe öffnet nicht mehr unbemerkt mehr
+  Verbindungen, als das Formular zeigt.
+
+  - Hubs müssen Mitglieder der Gruppe sein. Das Feld „Hubs“ bietet nur noch
+    Mitglieder an. Ein Hub außerhalb der Mitglieder wird beim Speichern
+    abgelehnt, ebenso das Entfernen eines Mitglieds, das noch Hub ist.
+    Beim Update werden bestehende Hubs als Mitglieder eingetragen; die
+    Verbindungen auf dem Server bleiben dabei gleich.
+  - Neues Häkchen „Enforce rules“ im Bereich „Rules“. Es wird mit der ersten
+    Regel gesetzt. Ist es gesetzt und es gibt keine Regel, öffnet die Gruppe
+    nichts. Wer die Gruppe wieder ganz öffnen will, nimmt das Häkchen heraus.
+    Beim Update bekommen alle Gruppen mit Regeln das Häkchen.
+  - Ein Mitglied, für das noch Regeln bestehen, lässt sich nicht aus der
+    Gruppe entfernen. Die Meldung nennt die Regeln; erst diese löschen.
+  - Die Hilfetexte zu „Hubs“ und „Rules“ sind jetzt englisch (Tooltip am
+    Feld); der feste deutsche Hinweis über den Regeln ist weg.
+
+  Testen:
+  1. Gruppe mit Regeln öffnen: „Enforce rules“ ist gesetzt. Alle Regeln
+     löschen, „Apply to VPN Server“: Die Gruppe fehlt in settings.json unter
+     „custom_routes“ und „group_rules“, keine Verbindung geht durch.
+  2. Häkchen herausnehmen, erneut anwenden: alle Mitglieder erreichen sich
+     wieder auf allen Ports.
+  3. Unter „Members“ ein Mitglied entfernen, das in einer Regel steht, und
+     speichern: Meldung mit der Regel, nichts wird gespeichert.
+  4. Unter „Hubs“ hinzufügen: Die Auswahl zeigt nur Mitglieder der Gruppe.
