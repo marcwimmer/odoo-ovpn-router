@@ -16,18 +16,31 @@ configs, the `WG_FORWARD` iptables chain and the split DNS.
 `settings.json` and `.env` stay on the server and are never committed:
 `settings.json` holds the peer keys. Copy `.env.example` to `.env`.
 
+## Configuration
+
+Host-specific values (data and settings folders, interface, network, project
+name) come from `.env` next to `compose.yml`; see `.env.example`. Without
+`.env` the defaults in `compose.yml` apply.
+
+The container runs without `privileged`. It gets `NET_ADMIN`, `SYS_MODULE`
+and `/dev/net/tun`, which is enough for WireGuard, routes, iptables and
+dnsmasq in the host network namespace.
+
+For troubleshooting set `WG_BUILD_TARGET=debug` in `.env` and run
+`bin/run.sh`: the debug image adds `nmap` and `tcpdump`. Set it back to
+`runtime` (or remove the line) and run `bin/run.sh` again afterwards.
+
 ## Live server
 
-The live server still builds the container from its own checkout
-(`/opt/wireguard_zebroo`); `compose.yml` mounts its `settings` folder.
-Until the build moves to this folder, change the code here first (PR), then
-copy the changed files to the server checkout and commit them there. Do not
-edit the server checkout alone, or the two copies drift apart.
+The live server builds the container from this folder in its checkout of the
+repo. Change the code here (PR), pull it on the server, then run `bin/run.sh`.
 
 ## Tests
 
 ```sh
 python3 -m unittest discover -s wireguard-server/tests -v
+# Needs Docker; checks the capabilities and the debug image:
+bash wireguard-server/tests/test_capabilities.sh
 ```
 
 The compose file is named `compose.yml` on purpose: zodoo merges every
