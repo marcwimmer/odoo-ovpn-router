@@ -118,20 +118,22 @@ def build_iptables_script() -> str:
         "# --- Access rules in WG_FORWARD ---",
     ]
 
-    tmpl = f"iptables -A WG_FORWARD -i {WG_IFACE} -s {{_from}} -d {{_to}} -j ACCEPT"
+    # One template for every ACCEPT between two peers; "match" narrows it
+    # down (protocol, port) for directed group rules.
+    tmpl = f"iptables -A WG_FORWARD -i {WG_IFACE} -s {{_from}} -d {{_to}}{{match}} -j ACCEPT"
 
     # masters <-> all clients
     for master_ip in settings["masters"]:
         for client_ip in settings["clients"]:
-            lines.append(tmpl.format(_from=master_ip, _to=client_ip))
-            lines.append(tmpl.format(_from=client_ip, _to=master_ip))
+            lines.append(tmpl.format(_from=master_ip, _to=client_ip, match=""))
+            lines.append(tmpl.format(_from=client_ip, _to=master_ip, match=""))
 
     # custom_routes pairs
     for a_name, b_name in settings["custom_routes"]:
         a_ip = get_ip(a_name)
         b_ip = get_ip(b_name)
-        lines.append(tmpl.format(_from=a_ip, _to=b_ip))
-        lines.append(tmpl.format(_from=b_ip, _to=a_ip))
+        lines.append(tmpl.format(_from=a_ip, _to=b_ip, match=""))
+        lines.append(tmpl.format(_from=b_ip, _to=a_ip, match=""))
 
     # Directed rules of groups that have them: only "from" may open a
     # connection to "to" on this protocol and port. Replies pass through the
@@ -147,8 +149,11 @@ def build_iptables_script() -> str:
             raise ValueError(f"Unsupported protocol in group rule: {rule!r}")
         port = int(rule["port"])
         lines.append(
-            f"iptables -A WG_FORWARD -i {WG_IFACE} -s {get_ip(rule['from'])} "
-            f"-d {get_ip(rule['to'])} -p {proto} --dport {port} -j ACCEPT"
+            tmpl.format(
+                _from=get_ip(rule["from"]),
+                _to=get_ip(rule["to"]),
+                match=f" -p {proto} --dport {port}",
+            )
         )
 
     # Full-Tunnel: diese Clients duerfen ueber den Server ins Internet raus

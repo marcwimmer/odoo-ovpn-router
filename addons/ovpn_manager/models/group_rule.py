@@ -49,6 +49,16 @@ class OvpnGroupRule(models.Model):
         ),
     ]
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        rules = super().create(vals_list)
+        # Once a group has a rule, deleting the last one must not open the
+        # whole group again, see ovpn.group.enforce_rules.
+        rules.group_id.filtered(lambda group: not group.enforce_rules).write(
+            {"enforce_rules": True}
+        )
+        return rules
+
     def name_get(self):
         return [
             (
@@ -91,9 +101,9 @@ class OvpnGroupRule(models.Model):
             # server and must not show up in settings.json.
             if not (rec.from_member_id.active and rec.to_member_id.active):
                 continue
-            # _check_members only runs when the rule changes. A member removed
-            # from the group later must lose its rules too, otherwise the
-            # server opens a path the member list does not show.
+            # ovpn.group._check_rules_have_members blocks removing such a
+            # member. Rules from before that check may still exist; they must
+            # not open a path the member list does not show.
             if (rec.from_member_id | rec.to_member_id) - rec.group_id.member_ids:
                 continue
             res.append(
