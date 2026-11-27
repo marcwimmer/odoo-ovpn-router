@@ -619,9 +619,7 @@ class OvpnMember(models.Model):
             "# Slower, but works through restrictive networks (hotels, captive\n"
             "# portals) that only allow TCP 443. Requires the wstunnel client\n"
             "# running locally before this tunnel is activated:\n"
-            "#\n"
-            + "".join(f"#   {line}\n" for line in cmd_lines)
-            + "#\n"
+            "#\n" + "".join(f"#   {line}\n" for line in cmd_lines) + "#\n"
             f"# Install wstunnel ({version}): https://github.com/erebe/wstunnel/releases\n"
             "# (macOS: brew install wstunnel). Start it, then activate this tunnel.\n"
             "#\n"
