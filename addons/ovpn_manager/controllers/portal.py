@@ -1,4 +1,4 @@
-from odoo import http, _
+from odoo import http
 import base64
 import binascii
 import arrow
@@ -146,21 +146,33 @@ echo "WireGuard '{iface}' installed. VPN IP: {vpn_ip}"
                     ],
                 )
             else:
-                error = _("Wrong password. Please try again.")
+                error = True
 
+        is_script = member.delivery_mode in ("script_server_key", "script_client_key")
         return request.render(
             "ovpn_manager.vpn_download_password",
             {
                 "hash": hash,
                 "member_name": member.name,
+                # The page carries every text in German and English; the
+                # template shows the error in both, so only the flag matters.
                 "error": error,
+                # Initial page language; the switcher on the page changes it.
+                "page_lang": request.httprequest.accept_languages.best_match(
+                    ["de", "en"], default="de"
+                ),
+                "file_name": member.name + (".sh" if is_script else ".conf"),
+                "iface": site.wg_interface_name or "zebroo",
+                # VPN address of the server, used in the "check connection"
+                # step (ping) of the installation guide.
+                "server_ip": site.tun0_local,
+                "wstunnel_cmd": member._wstunnel_client_cmd(),
                 "is_wireguard": bool(member.wg_config),
                 # The plain "Download" delivers a Bash install-script (not a .conf)
                 # for both script delivery modes; only full_conf ships a .conf.
                 # Driven by delivery_mode (authoritative), not by the presence of
                 # a lingering legacy wg_private_key.
-                "is_script": member.delivery_mode
-                in ("script_server_key", "script_client_key"),
+                "is_script": is_script,
                 # Client-key members get the provisioning script (_build_provisioning_script),
                 # which generates the PrivateKey locally and DOES support macOS
                 # (brew + wg genkey). The server-key install-script, on the other

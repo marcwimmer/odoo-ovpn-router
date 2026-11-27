@@ -2,3 +2,4 @@
 from . import test_wg_package
 from . import test_site_json
 from . import test_group_rules
+from . import test_download_page
