@@ -9,6 +9,8 @@
     delivery mode of the member supports.
   -->
   <template id="vpn_download_password" name="VPN Download Password">
+    <!-- guide_images: file names in static/src/img/guide; a step without
+         its screenshot shows only the text, never a broken image. -->
     <t t-set="img" t-value="'/ovpn_manager/static/src/img/guide/'"/>
     <t t-set="conf_name" t-value="member_name + '.conf'"/>
     <t t-set="tcp_name" t-value="member_name + '-tcp.conf'"/>
@@ -257,7 +259,7 @@
                     <pre>sudo bash <t t-esc="file_name"/></pre>
                     <span lang="de">Am Ende steht „WireGuard '<t t-esc="iface"/>' installed“.</span>
                     <span lang="en">At the end it prints “WireGuard '<t t-esc="iface"/>' installed”.</span>
-                    <img class="shot" t-attf-src="#{img}linux_script_client.png" loading="lazy" alt="sudo bash"/>
+                    <img t-if="'linux_script_client.png' in guide_images" class="shot" t-attf-src="#{img}linux_script_client.png" loading="lazy" alt="sudo bash"/>
                   </li>
                   <t t-call="ovpn_manager.vpn_guide_check_terminal"/>
                 </ol>
@@ -269,13 +271,13 @@
                     <span lang="de">Öffnen Sie das Terminal (Programme → Dienstprogramme → Terminal). Prüfen Sie, ob Homebrew installiert ist. Fehlt es, installieren Sie es wie auf <a href="https://brew.sh" target="_blank">brew.sh</a> beschrieben.</span>
                     <span lang="en">Open Terminal (Applications → Utilities → Terminal). Check that Homebrew is installed. If it is missing, install it as described on <a href="https://brew.sh" target="_blank">brew.sh</a>.</span>
                     <pre>brew --version</pre>
-                    <img class="shot" t-attf-src="#{img}macos_term_1_brew.png" loading="lazy" alt="brew --version"/>
+                    <img t-if="'macos_term_1_brew.png' in guide_images" class="shot" t-attf-src="#{img}macos_term_1_brew.png" loading="lazy" alt="brew --version"/>
                   </li>
                   <li>
                     <span lang="de">Führen Sie das Script <b>ohne sudo</b> aus. Es fragt selbst nach Ihrem Mac-Passwort.</span>
                     <span lang="en">Run the script <b>without sudo</b>. It asks for your Mac password itself.</span>
                     <pre>bash ~/Downloads/<t t-esc="file_name"/></pre>
-                    <img class="shot" t-attf-src="#{img}macos_term_2_run.png" loading="lazy" alt="bash"/>
+                    <img t-if="'macos_term_2_run.png' in guide_images" class="shot" t-attf-src="#{img}macos_term_2_run.png" loading="lazy" alt="bash"/>
                   </li>
                   <t t-call="ovpn_manager.vpn_guide_check_terminal"/>
                 </ol>
@@ -300,7 +302,7 @@
                     <pre>sudo bash <t t-esc="file_name"/></pre>
                     <span lang="de">Am Ende steht „WireGuard '<t t-esc="iface"/>' installed“.</span>
                     <span lang="en">At the end it prints “WireGuard '<t t-esc="iface"/>' installed”.</span>
-                    <img class="shot" t-attf-src="#{img}linux_script_server.png" loading="lazy" alt="sudo bash"/>
+                    <img t-if="'linux_script_server.png' in guide_images" class="shot" t-attf-src="#{img}linux_script_server.png" loading="lazy" alt="sudo bash"/>
                   </li>
                   <t t-call="ovpn_manager.vpn_guide_check_terminal"/>
                 </ol>
@@ -322,22 +324,22 @@
                   <li>
                     <span lang="de">Installieren Sie die App <a href="https://apps.apple.com/app/wireguard/id1451685025" target="_blank">WireGuard</a> aus dem Mac App Store.</span>
                     <span lang="en">Install the <a href="https://apps.apple.com/app/wireguard/id1451685025" target="_blank">WireGuard</a> app from the Mac App Store.</span>
-                    <img class="shot" t-attf-src="#{img}macos_1_install.png" loading="lazy" alt="App Store"/>
+                    <img t-if="'macos_1_install.png' in guide_images" class="shot" t-attf-src="#{img}macos_1_install.png" loading="lazy" alt="App Store"/>
                   </li>
                   <li>
                     <span lang="de">Öffnen Sie WireGuard. Klicken Sie auf <b>Tunnel aus Datei importieren</b> und wählen Sie <code t-esc="conf_name"/> (meist im Ordner Downloads).</span>
                     <span lang="en">Open WireGuard. Click <b>Import Tunnel(s) from File</b> and select <code t-esc="conf_name"/> (usually in the Downloads folder).</span>
-                    <img class="shot" t-attf-src="#{img}macos_2_import.png" loading="lazy" alt="Import"/>
+                    <img t-if="'macos_2_import.png' in guide_images" class="shot" t-attf-src="#{img}macos_2_import.png" loading="lazy" alt="Import"/>
                   </li>
                   <li>
                     <span lang="de">Beim ersten Tunnel fragt macOS, ob WireGuard VPN-Konfigurationen hinzufügen darf. Klicken Sie auf <b>Erlauben</b>.</span>
                     <span lang="en">For the first tunnel macOS asks whether WireGuard may add VPN configurations. Click <b>Allow</b>.</span>
-                    <img class="shot" t-attf-src="#{img}macos_3_allow.png" loading="lazy" alt="Allow"/>
+                    <img t-if="'macos_3_allow.png' in guide_images" class="shot" t-attf-src="#{img}macos_3_allow.png" loading="lazy" alt="Allow"/>
                   </li>
                   <li>
                     <span lang="de">Wählen Sie den Tunnel <b t-esc="member_name"/> in der Liste und klicken Sie auf <b>Aktiviere</b>.</span>
                     <span lang="en">Select the tunnel <b t-esc="member_name"/> in the list and click <b>Activate</b>.</span>
-                    <img class="shot" t-attf-src="#{img}macos_4_activate.png" loading="lazy" alt="Activate"/>
+                    <img t-if="'macos_4_activate.png' in guide_images" class="shot" t-attf-src="#{img}macos_4_activate.png" loading="lazy" alt="Activate"/>
                   </li>
                   <li class="check">
                     <b>
@@ -346,7 +348,7 @@
                     </b>
                     <span lang="de">Der Status steht auf <b>Aktiv</b>. Beim Peer steht <b>Letzter Handshake: vor … Sekunden</b>. Fehlt der Handshake, ist der Tunnel nicht verbunden.</span>
                     <span lang="en">The status is <b>Active</b>. The peer shows <b>Latest handshake: … seconds ago</b>. Without a handshake the tunnel is not connected.</span>
-                    <img class="shot" t-attf-src="#{img}macos_5_check.png" loading="lazy" alt="Status"/>
+                    <img t-if="'macos_5_check.png' in guide_images" class="shot" t-attf-src="#{img}macos_5_check.png" loading="lazy" alt="Status"/>
                   </li>
                 </ol>
               </details>
@@ -356,17 +358,17 @@
                   <li>
                     <span lang="de">Laden Sie <a href="https://www.wireguard.com/install/" target="_blank">WireGuard für Windows</a> herunter und installieren Sie es.</span>
                     <span lang="en">Download <a href="https://www.wireguard.com/install/" target="_blank">WireGuard for Windows</a> and install it.</span>
-                    <img class="shot" t-attf-src="#{img}win_1_install.png" loading="lazy" alt="Installer"/>
+                    <img t-if="'win_1_install.png' in guide_images" class="shot" t-attf-src="#{img}win_1_install.png" loading="lazy" alt="Installer"/>
                   </li>
                   <li>
                     <span lang="de">Öffnen Sie WireGuard. Klicken Sie auf <b>Tunnel aus Datei importieren</b> und wählen Sie <code t-esc="conf_name"/>.</span>
                     <span lang="en">Open WireGuard. Click <b>Import tunnel(s) from file</b> and select <code t-esc="conf_name"/>.</span>
-                    <img class="shot" t-attf-src="#{img}win_2_import.png" loading="lazy" alt="Import"/>
+                    <img t-if="'win_2_import.png' in guide_images" class="shot" t-attf-src="#{img}win_2_import.png" loading="lazy" alt="Import"/>
                   </li>
                   <li>
                     <span lang="de">Wählen Sie den Tunnel <b t-esc="member_name"/> und klicken Sie auf <b>Aktivieren</b>.</span>
                     <span lang="en">Select the tunnel <b t-esc="member_name"/> and click <b>Activate</b>.</span>
-                    <img class="shot" t-attf-src="#{img}win_3_activate.png" loading="lazy" alt="Activate"/>
+                    <img t-if="'win_3_activate.png' in guide_images" class="shot" t-attf-src="#{img}win_3_activate.png" loading="lazy" alt="Activate"/>
                   </li>
                   <li class="check">
                     <b>
@@ -376,7 +378,7 @@
                     <span lang="de">Der Status steht auf <b>Aktiv</b>. Beim Peer steht <b>Letzter Handshake</b> mit einer Zeit von wenigen Sekunden. Zusätzlich in der Eingabeaufforderung:</span>
                     <span lang="en">The status is <b>Active</b>. The peer shows <b>Latest handshake</b> a few seconds ago. Also in the command prompt:</span>
                     <pre>ping <t t-esc="server_ip"/></pre>
-                    <img class="shot" t-attf-src="#{img}win_4_check.png" loading="lazy" alt="Status"/>
+                    <img t-if="'win_4_check.png' in guide_images" class="shot" t-attf-src="#{img}win_4_check.png" loading="lazy" alt="Status"/>
                   </li>
                 </ol>
               </details>
@@ -386,27 +388,27 @@
                   <li>
                     <span lang="de">Installieren Sie die App <a href="https://apps.apple.com/app/wireguard/id1441195209" target="_blank">WireGuard</a> aus dem App Store.</span>
                     <span lang="en">Install the <a href="https://apps.apple.com/app/wireguard/id1441195209" target="_blank">WireGuard</a> app from the App Store.</span>
-                    <img class="shot phone" t-attf-src="#{img}ios_1_install.png" loading="lazy" alt="App Store"/>
+                    <img t-if="'ios_1_install.png' in guide_images" class="shot phone" t-attf-src="#{img}ios_1_install.png" loading="lazy" alt="App Store"/>
                   </li>
                   <li>
                     <span lang="de">Öffnen Sie diese Seite in Safari auf dem iPhone/iPad und laden Sie die .conf-Datei oben herunter. Tippen Sie dann in WireGuard auf <b>+</b> und auf <b>Aus Datei oder Archiv erstellen</b>.</span>
                     <span lang="en">Open this page in Safari on the iPhone/iPad and download the .conf file above. Then tap <b>+</b> in WireGuard and <b>Create from file or archive</b>.</span>
-                    <img class="shot phone" t-attf-src="#{img}ios_2_add.png" loading="lazy" alt="+"/>
+                    <img t-if="'ios_2_add.png' in guide_images" class="shot phone" t-attf-src="#{img}ios_2_add.png" loading="lazy" alt="+"/>
                   </li>
                   <li>
                     <span lang="de">Wählen Sie <code t-esc="conf_name"/> im Ordner <b>Downloads</b>.</span>
                     <span lang="en">Select <code t-esc="conf_name"/> in the <b>Downloads</b> folder.</span>
-                    <img class="shot phone" t-attf-src="#{img}ios_3_file.png" loading="lazy" alt="Files"/>
+                    <img t-if="'ios_3_file.png' in guide_images" class="shot phone" t-attf-src="#{img}ios_3_file.png" loading="lazy" alt="Files"/>
                   </li>
                   <li>
                     <span lang="de">Beim ersten Tunnel fragt iOS, ob WireGuard VPN-Konfigurationen hinzufügen darf. Tippen Sie auf <b>Erlauben</b>.</span>
                     <span lang="en">For the first tunnel iOS asks whether WireGuard may add VPN configurations. Tap <b>Allow</b>.</span>
-                    <img class="shot phone" t-attf-src="#{img}ios_4_allow.png" loading="lazy" alt="Allow"/>
+                    <img t-if="'ios_4_allow.png' in guide_images" class="shot phone" t-attf-src="#{img}ios_4_allow.png" loading="lazy" alt="Allow"/>
                   </li>
                   <li>
                     <span lang="de">Schalten Sie den Schalter neben <b t-esc="member_name"/> ein.</span>
                     <span lang="en">Turn on the switch next to <b t-esc="member_name"/>.</span>
-                    <img class="shot phone" t-attf-src="#{img}ios_5_activate.png" loading="lazy" alt="Switch"/>
+                    <img t-if="'ios_5_activate.png' in guide_images" class="shot phone" t-attf-src="#{img}ios_5_activate.png" loading="lazy" alt="Switch"/>
                   </li>
                   <li class="check">
                     <b>
@@ -415,7 +417,7 @@
                     </b>
                     <span lang="de">Tippen Sie auf den Tunnel. Der Status steht auf <b>Aktiv</b>, beim Peer steht <b>Letzter Handshake</b> mit einer Zeit von wenigen Sekunden.</span>
                     <span lang="en">Tap the tunnel. The status is <b>Active</b> and the peer shows <b>Latest handshake</b> a few seconds ago.</span>
-                    <img class="shot phone" t-attf-src="#{img}ios_6_check.png" loading="lazy" alt="Status"/>
+                    <img t-if="'ios_6_check.png' in guide_images" class="shot phone" t-attf-src="#{img}ios_6_check.png" loading="lazy" alt="Status"/>
                   </li>
                 </ol>
               </details>
@@ -426,14 +428,14 @@
                     <span lang="de">Installieren Sie WireGuard (Debian/Ubuntu):</span>
                     <span lang="en">Install WireGuard (Debian/Ubuntu):</span>
                     <pre>sudo apt-get install -y wireguard wireguard-tools</pre>
-                    <img class="shot" t-attf-src="#{img}linux_conf_1_install.png" loading="lazy" alt="apt-get"/>
+                    <img t-if="'linux_conf_1_install.png' in guide_images" class="shot" t-attf-src="#{img}linux_conf_1_install.png" loading="lazy" alt="apt-get"/>
                   </li>
                   <li>
                     <span lang="de">Legen Sie die Datei ab und starten Sie den Tunnel. Der Tunnel heißt danach <b t-esc="iface"/>.</span>
                     <span lang="en">Put the file in place and start the tunnel. The tunnel is then called <b t-esc="iface"/>.</span>
                     <pre>sudo install -m 600 <t t-esc="conf_name"/> /etc/wireguard/<t t-esc="iface"/>.conf
 sudo systemctl enable --now wg-quick@<t t-esc="iface"/></pre>
-                    <img class="shot" t-attf-src="#{img}linux_conf_2_up.png" loading="lazy" alt="wg-quick"/>
+                    <img t-if="'linux_conf_2_up.png' in guide_images" class="shot" t-attf-src="#{img}linux_conf_2_up.png" loading="lazy" alt="wg-quick"/>
                   </li>
                   <t t-call="ovpn_manager.vpn_guide_check_terminal"/>
                 </ol>
@@ -449,7 +451,7 @@ sudo systemctl enable --now wg-quick@<t t-esc="iface"/></pre>
                   <li>
                     <span lang="de">Laden Sie oben das <b>Install-Script für TCP/443</b> herunter und führen Sie es wie oben beschrieben aus. Es installiert zusätzlich den wstunnel-Client und startet ihn als Dienst.</span>
                     <span lang="en">Download the <b>install script for TCP/443</b> above and run it as described above. It also installs the wstunnel client and starts it as a service.</span>
-                    <img class="shot" t-attf-src="#{img}tcp_wstunnel.png" loading="lazy" alt="wstunnel"/>
+                    <img t-if="'tcp_wstunnel.png' in guide_images" class="shot" t-attf-src="#{img}tcp_wstunnel.png" loading="lazy" alt="wstunnel"/>
                   </li>
                   <t t-call="ovpn_manager.vpn_guide_check_terminal"/>
                 </ol>
@@ -464,7 +466,7 @@ sudo systemctl enable --now wg-quick@<t t-esc="iface"/></pre>
                     <span lang="de">Starten Sie wstunnel in einem Terminal und lassen Sie es offen:</span>
                     <span lang="en">Start wstunnel in a terminal and keep it open:</span>
                     <pre t-esc="wstunnel_cmd"/>
-                    <img class="shot" t-attf-src="#{img}tcp_wstunnel.png" loading="lazy" alt="wstunnel"/>
+                    <img t-if="'tcp_wstunnel.png' in guide_images" class="shot" t-attf-src="#{img}tcp_wstunnel.png" loading="lazy" alt="wstunnel"/>
                   </li>
                   <li>
                     <span lang="de">Laden Sie oben die <b>.conf-Datei für TCP/443</b> (<code t-esc="tcp_name"/>) herunter. Importieren und aktivieren Sie sie wie die normale .conf-Datei (Anleitung für Ihr Gerät oben).</span>
@@ -523,7 +525,7 @@ sudo systemctl enable --now wg-quick@<t t-esc="iface"/></pre>
       <span lang="en"><b>latest handshake</b> shows a time of a few seconds. The server answers the ping.</span>
       <pre>sudo wg show <t t-esc="iface"/>
 ping -c 3 <t t-esc="server_ip"/></pre>
-      <img class="shot" t-attf-src="#{img}linux_check.png" loading="lazy" alt="wg show"/>
+      <img t-if="'linux_check.png' in guide_images" class="shot" t-attf-src="#{img}linux_check.png" loading="lazy" alt="wg show"/>
     </li>
   </template>
 </odoo>

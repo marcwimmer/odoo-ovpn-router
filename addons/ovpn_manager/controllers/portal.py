@@ -3,8 +3,10 @@ import base64
 import binascii
 import arrow
 import logging
+import os
 import uuid
 from odoo.http import request, content_disposition
+from odoo.modules.module import get_module_resource
 from odoo.osv import expression
 from odoo.addons.portal.controllers.portal import CustomerPortal, pager as portal_pager
 from odoo.exceptions import AccessError, MissingError
@@ -13,6 +15,12 @@ from collections import OrderedDict
 from odoo.http import request
 
 _logger = logging.getLogger(__name__)
+
+
+def _guide_images():
+    """Screenshots available for the installation guide on the download page."""
+    path = get_module_resource("ovpn_manager", "static", "src", "img", "guide")
+    return frozenset(os.listdir(path)) if path else frozenset()
 
 
 class PortalAccount(CustomerPortal):
@@ -173,6 +181,7 @@ echo "WireGuard '{iface}' installed. VPN IP: {vpn_ip}"
                 # Driven by delivery_mode (authoritative), not by the presence of
                 # a lingering legacy wg_private_key.
                 "is_script": is_script,
+                "guide_images": _guide_images(),
                 # Client-key members get the provisioning script (_build_provisioning_script),
                 # which generates the PrivateKey locally and DOES support macOS
                 # (brew + wg genkey). The server-key install-script, on the other

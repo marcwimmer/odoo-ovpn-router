@@ -1,6 +1,9 @@
 # Part of Zebroo GmbH. See LICENSE file for full copyright and licensing details (www.zebroo.de/license).
 import base64
+import os
+import re
 
+from odoo.modules.module import get_module_resource
 from odoo.tests.common import HttpCase, tagged
 
 
@@ -100,3 +103,16 @@ class TestDownloadPage(HttpCase):
         self.assertIn('data-device="tcp"', html)
         # The TCP script installs wstunnel itself, no manual command.
         self.assertNotIn("wstunnel client --connection", html)
+
+    def test_missing_screenshots_are_hidden(self):
+        """Every guide image on the page exists; missing ones are left out."""
+        guide_dir = get_module_resource("ovpn_manager", "static", "src", "img", "guide")
+        for mode in ("full_conf", "script_server_key", "script_client_key"):
+            _member, html = self._page(mode, use_wstunnel=True)
+            shots = re.findall(r"/static/src/img/guide/([a-z0-9_]+\.png)", html)
+            self.assertTrue(shots, mode)
+            for name in shots:
+                self.assertTrue(
+                    os.path.isfile(os.path.join(guide_dir, name)),
+                    f"{mode}: {name} is shown but missing",
+                )
