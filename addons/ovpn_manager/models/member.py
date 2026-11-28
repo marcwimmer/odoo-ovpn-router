@@ -579,6 +579,24 @@ class OvpnMember(models.Model):
         # append one so the result stays a valid tunnel config.
         return config.rstrip() + "\n" + line + "\n"
 
+    def _wstunnel_client_cmd(self):
+        """Command line that starts the local wstunnel client for TCP/WSS mode.
+
+        Shared by the comment header of the TCP config and the download page,
+        so both always show the same command. Split over two lines with a
+        shell line continuation.
+        """
+        self.ensure_one()
+        if self.wg_config:
+            port = self._wg_endpoint_port(self.wg_config)
+        else:
+            port = self.site_id.wg_server_port or 51820
+        endpoint, prefix, _version = self._wstunnel_params()
+        return (
+            f"wstunnel client --connection-min-idle 5 -P {prefix} \\\n"
+            f"  -L udp://{port}:127.0.0.1:{port}?timeout_sec=0 {endpoint}"
+        )
+
     def _get_tcp_content(self):
         """WireGuard config for the TCP/WSS (wstunnel) mode.
 
@@ -594,16 +612,14 @@ class OvpnMember(models.Model):
         config = self.wg_config.strip()
         port = self._wg_endpoint_port(config)
         tcp_config = self._endpoint_to_localhost(config, port)
-        endpoint, prefix, version = self._wstunnel_params()
+        version = self._wstunnel_params()[2]
+        cmd_lines = self._wstunnel_client_cmd().split("\n")
         header = (
             "# === TCP / WSS mode (WireGuard over TLS, port 443) ===\n"
             "# Slower, but works through restrictive networks (hotels, captive\n"
             "# portals) that only allow TCP 443. Requires the wstunnel client\n"
             "# running locally before this tunnel is activated:\n"
-            "#\n"
-            f"#   wstunnel client --connection-min-idle 5 -P {prefix} \\\n"
-            f"#     -L udp://{port}:127.0.0.1:{port}?timeout_sec=0 {endpoint}\n"
-            "#\n"
+            "#\n" + "".join(f"#   {line}\n" for line in cmd_lines) + "#\n"
             f"# Install wstunnel ({version}): https://github.com/erebe/wstunnel/releases\n"
             "# (macOS: brew install wstunnel). Start it, then activate this tunnel.\n"
             "#\n"

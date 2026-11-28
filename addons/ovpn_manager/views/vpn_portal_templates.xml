@@ -1,44 +1,61 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Part of Zebroo GmbH. See LICENSE file for full copyright and licensing details (www.zebroo.de/license). -->
 <odoo>
+  <!--
+    Download page of a VPN member. Every text exists twice, as lang="de" and
+    lang="en"; the CSS hides the language that is not selected in data-ui on
+    <html>. The server picks the start language from the browser, the switcher
+    changes it on the page. The guide shows only the devices that the
+    delivery mode of the member supports.
+  -->
   <template id="vpn_download_password" name="VPN Download Password">
-    <html>
+    <!-- guide_images: file names in static/src/img/guide; a step without
+         its screenshot shows only the text, never a broken image. -->
+    <t t-set="img" t-value="'/ovpn_manager/static/src/img/guide/'"/>
+    <t t-set="conf_name" t-value="member_name + '.conf'"/>
+    <t t-set="tcp_name" t-value="member_name + '-tcp.conf'"/>
+    <html t-att-lang="page_lang" t-att-data-ui="page_lang">
       <head>
         <meta charset="utf-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1"/>
         <title>VPN Download</title>
         <style>
           * { box-sizing: border-box; margin: 0; padding: 0; }
+          html[data-ui="de"] [lang="en"], html[data-ui="en"] [lang="de"] { display: none !important; }
           body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: linear-gradient(135deg, #ede9fe 0%, #f4f6f9 60%);
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            padding: 2rem 1rem;
+            color: #374151;
           }
           .card {
             background: #fff;
             border-radius: 16px;
             box-shadow: 0 8px 32px rgba(109,40,217,0.13), 0 2px 8px rgba(0,0,0,0.07);
-            padding: 2.5rem 2.2rem;
+            padding: 2.2rem 2rem;
             width: 100%;
-            max-width: 400px;
+            max-width: 440px;
+            margin: 0 auto;
           }
-          .logo-wrap { text-align: center; margin-bottom: 1.6rem; }
+          .card.guide { max-width: 760px; margin-top: 1.5rem; }
+          .lang-switch { display: flex; justify-content: flex-end; gap: .3rem; margin-bottom: .6rem; }
+          .lang-switch button {
+            border: 1.5px solid #ddd6fe;
+            background: #fff;
+            color: #6d28d9;
+            border-radius: 6px;
+            padding: .2rem .55rem;
+            font-size: .8rem;
+            font-weight: 600;
+            cursor: pointer;
+          }
+          html[data-ui="de"] .lang-switch button[data-set="de"],
+          html[data-ui="en"] .lang-switch button[data-set="en"] { background: #7c3aed; border-color: #7c3aed; color: #fff; }
+          .logo-wrap { text-align: center; margin-bottom: 1.4rem; }
           .logo-wrap img { max-width: 130px; height: auto; }
-          h2 {
-            text-align: center;
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: #1e1b4b;
-            margin-bottom: .4rem;
-          }
-          .subtitle {
-            text-align: center;
-            color: #6b7280;
-            font-size: 0.875rem;
-            margin-bottom: 1.4rem;
-          }
+          h2 { text-align: center; font-size: 1.25rem; font-weight: 700; color: #1e1b4b; margin-bottom: .4rem; }
+          .subtitle { text-align: center; color: #6b7280; font-size: .875rem; margin-bottom: 1.4rem; }
           .badge-file {
             display: flex;
             align-items: center;
@@ -51,6 +68,7 @@
             font-size: .875rem;
             color: #5b21b6;
             font-weight: 500;
+            word-break: break-all;
           }
           .badge-file svg { flex-shrink: 0; }
           .error-box {
@@ -62,13 +80,7 @@
             font-size: .875rem;
             margin-bottom: 1.1rem;
           }
-          label {
-            display: block;
-            font-size: .875rem;
-            font-weight: 600;
-            color: #374151;
-            margin-bottom: .4rem;
-          }
+          label { display: block; font-size: .875rem; font-weight: 600; margin-bottom: .4rem; }
           input[type="password"] {
             width: 100%;
             padding: .65rem .9rem;
@@ -80,10 +92,7 @@
             transition: border-color .2s, box-shadow .2s;
             margin-bottom: 1.2rem;
           }
-          input[type="password"]:focus {
-            border-color: #7c3aed;
-            box-shadow: 0 0 0 3px rgba(124,58,237,.15);
-          }
+          input[type="password"]:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,.15); }
           button[type="submit"] {
             width: 100%;
             padding: .7rem;
@@ -101,146 +110,422 @@
             gap: .5rem;
           }
           button[type="submit"]:hover { background: #6d28d9; }
-          button[type="submit"].btn-tcp {
-            margin-top: .6rem;
-            background: #fff;
-            color: #6d28d9;
-            border: 1.5px solid #ddd6fe;
-          }
+          button[type="submit"].btn-tcp { margin-top: .6rem; background: #fff; color: #6d28d9; border: 1.5px solid #ddd6fe; }
           button[type="submit"].btn-tcp:hover { background: #f5f3ff; }
-          .tcp-note {
-            text-align: center;
-            font-size: .78rem;
-            color: #6b7280;
-            margin-top: .4rem;
-            margin-bottom: 0;
-          }
-          .install-section {
-            margin-top: 1.8rem;
-            border-top: 1px solid #e5e7eb;
-            padding-top: 1.4rem;
-          }
-          .install-section h3 {
-            font-size: .95rem;
-            font-weight: 700;
-            color: #1e1b4b;
-            margin-bottom: .8rem;
-          }
-          .install-section h4 {
-            font-size: .85rem;
+          .tcp-note { text-align: center; font-size: .78rem; color: #6b7280; margin-top: .4rem; }
+          .guide h3 { font-size: 1.1rem; font-weight: 700; color: #1e1b4b; margin-bottom: .6rem; }
+          .guide p, .guide li { font-size: .9rem; line-height: 1.5; }
+          .guide .intro { margin-bottom: 1rem; }
+          .guide a { color: #7c3aed; }
+          details.device { border: 1px solid #e5e7eb; border-radius: 10px; margin-bottom: .7rem; }
+          details.device &gt; summary {
+            cursor: pointer;
+            padding: .75rem 1rem;
             font-weight: 600;
-            color: #374151;
-            margin-bottom: .3rem;
-            margin-top: .9rem;
+            color: #1e1b4b;
+            list-style-position: inside;
           }
-          .install-section h4:first-of-type { margin-top: 0; }
-          .install-section p {
-            font-size: .8rem;
-            color: #6b7280;
-            margin-bottom: .3rem;
-          }
-          .install-section code {
+          details.device[open] &gt; summary { border-bottom: 1px solid #e5e7eb; }
+          ol.steps { padding: .8rem 1rem .4rem 2.4rem; }
+          ol.steps &gt; li { margin-bottom: 1.3rem; }
+          ol.steps &gt; li.check::marker { color: #059669; font-weight: 700; }
+          .shot {
             display: block;
-            background: #f5f3ff;
-            border: 1px solid #ddd6fe;
+            max-width: 100%;
+            height: auto;
+            margin-top: .5rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+          }
+          .shot.phone { max-width: 280px; }
+          pre {
+            background: #1e1b4b;
+            color: #ede9fe;
             border-radius: 6px;
-            padding: .4rem .7rem;
-            font-size: .78rem;
-            color: #5b21b6;
-            font-family: "SF Mono", "Fira Code", monospace;
-            margin-top: .3rem;
-            margin-bottom: .2rem;
-            white-space: pre;
+            padding: .5rem .7rem;
+            margin: .4rem 0;
+            font-size: .8rem;
+            font-family: "SF Mono", Menlo, "Fira Code", monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+          }
+          code { font-family: "SF Mono", Menlo, "Fira Code", monospace; font-size: .85em; background: #f5f3ff; padding: 0 .2rem; border-radius: 3px; }
+          .hint {
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            border-radius: 8px;
+            padding: .6rem .9rem;
+            font-size: .85rem;
+            margin: .8rem 0;
+          }
+          @media (max-width: 480px) {
+            body { padding: 1rem .5rem; }
+            .card { padding: 1.6rem 1.1rem; }
+            ol.steps { padding-left: 1.8rem; padding-right: .6rem; }
           }
         </style>
       </head>
       <body>
         <div class="card">
+          <div class="lang-switch">
+            <button type="button" data-set="de" title="Deutsch">DE</button>
+            <button type="button" data-set="en" title="English">EN</button>
+          </div>
           <div class="logo-wrap">
             <img src="https://www.zebroo.de/web/image/website/1/logo/Zebroo?unique=05cd4b9" alt="Zebroo"/>
           </div>
-          <h2>VPN Config Download</h2>
-          <p class="subtitle">Enter the password to download your VPN configuration.</p>
+          <h2>
+            <span lang="de">VPN-Zugang herunterladen</span>
+            <span lang="en">VPN Config Download</span>
+          </h2>
+          <p class="subtitle">
+            <span lang="de">Geben Sie das Passwort ein, um Ihren VPN-Zugang herunterzuladen.</span>
+            <span lang="en">Enter the password to download your VPN configuration.</span>
+          </p>
           <t t-if="member_name">
             <div class="badge-file">
               <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#7c3aed" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 4H7a2 2 0 01-2-2V6a2 2 0 012-2h5l5 5v13a2 2 0 01-2 2z"/>
               </svg>
-              <span t-esc="member_name + ('.sh' if is_script else '.conf')"/>
+              <span t-esc="file_name"/>
             </div>
           </t>
           <t t-if="error">
-            <div class="error-box" t-esc="error"/>
+            <div class="error-box">
+              <span lang="de">Falsches Passwort. Bitte erneut versuchen.</span>
+              <span lang="en">Wrong password. Please try again.</span>
+            </div>
           </t>
           <form method="post" t-attf-action="/download/byhash/vpn/#{hash}">
             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-            <label for="password">Password</label>
-            <input type="password" id="password" name="password" autofocus="1" required="1" placeholder="Enter password"/>
+            <label for="password">
+              <span lang="de">Passwort</span>
+              <span lang="en">Password</span>
+            </label>
+            <input type="password" id="password" name="password" autofocus="1" required="1"/>
             <button type="submit">
               <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/>
               </svg>
-              <t t-if="is_script">Install-Script herunterladen (.sh)</t>
-              <t t-else="">.conf-Datei herunterladen</t>
+              <t t-if="is_script">
+                <span lang="de">Install-Script herunterladen (.sh)</span>
+                <span lang="en">Download install script (.sh)</span>
+              </t>
+              <t t-else="">
+                <span lang="de">.conf-Datei herunterladen</span>
+                <span lang="en">Download .conf file</span>
+              </t>
             </button>
             <t t-if="show_tcp">
-              <button type="submit" name="config_type" value="tcp" class="btn-tcp"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/><circle cx="12" cy="12" r="9"/></svg>
-              .conf-Datei f&#xFC;r TCP/443 herunterladen
-            </button>
-              <p class="tcp-note">Langsamer, kommt aber durch Netze, die nur TCP 443 erlauben
-                (Hotel, Gastnetz). Setzt voraus, dass der wstunnel-Client lokal l&#xE4;uft.</p>
+              <button type="submit" name="config_type" value="tcp" class="btn-tcp">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/>
+                  <circle cx="12" cy="12" r="9"/>
+                </svg>
+                <t t-if="is_client_key_script">
+                  <span lang="de">Install-Script für TCP/443 herunterladen</span>
+                  <span lang="en">Download install script for TCP/443</span>
+                </t>
+                <t t-else="">
+                  <span lang="de">.conf-Datei für TCP/443 herunterladen</span>
+                  <span lang="en">Download .conf file for TCP/443</span>
+                </t>
+              </button>
+              <p class="tcp-note">
+                <span lang="de">Langsamer, kommt aber durch Netze, die nur TCP 443 erlauben (Hotel, Gastnetz). Anleitung unten unter „TCP/443“.</span>
+                <span lang="en">Slower, but gets through networks that only allow TCP 443 (hotel, guest network). See “TCP/443” in the guide below.</span>
+              </p>
             </t>
           </form>
-          <div class="install-section">
-            <h3>Installation Guide</h3>
-            <t t-if="is_script and is_client_key_script">
-              <h4>Linux / Server &amp; macOS</h4>
-              <p>The download is an install <b>script</b> (not a .conf). It generates the WireGuard private key <b>locally on your machine</b> (the key never leaves your device), registers the public key and brings the tunnel up automatically. Save it and run as root:</p>
-              <code>sudo bash <t t-esc="member_name + '.sh'"/></code>
-              <p><b>Linux:</b> a Debian/Ubuntu-based host with root access.<br/>
-              <b>macOS:</b> install <a href="https://brew.sh" target="_blank" style="color:#7c3aed;">Homebrew</a> first, then run the script &#x2014; it installs <code>wireguard-tools</code> via <code>brew</code> and configures the tunnel.</p>
-              <p style="margin-top:.6rem;">&#x2139;&#xFE0F; Windows / iPhone are not supported by this script &#x2014; for those a ready-made <b>.conf</b> is needed instead; ask your administrator to switch your delivery mode.</p>
-            </t>
-            <t t-elif="is_script">
-              <h4>Linux / Server</h4>
-              <p>The download is an install <b>script</b> (not a .conf). Save it and run as root &#x2014; it installs WireGuard and brings the tunnel up automatically:</p>
-              <code>sudo bash <t t-esc="member_name + '.sh'"/></code>
-              <p>Requires a Debian/Ubuntu-based Linux host with root access.</p>
-              <p style="margin-top:.6rem;">&#x26A0;&#xFE0F; This script only runs on Linux. For <b>macOS / Windows / iPhone</b> a ready-made <b>.conf</b> is needed instead &#x2014; ask your administrator to enable config delivery for your access.</p>
-            </t>
-            <t t-elif="is_wireguard">
-              <h4>Linux / Server</h4>
-              <p>You downloaded a ready-made <b>.conf</b>. Install WireGuard, copy the file into place and bring the tunnel up (run as root):</p>
-              <code>sudo apt-get install -y wireguard wireguard-tools
-sudo cp <t t-esc="member_name + '.conf'"/> /etc/wireguard/
-sudo chmod 600 /etc/wireguard/<t t-esc="member_name + '.conf'"/>
-sudo wg-quick up <t t-esc="member_name"/>
-sudo systemctl enable wg-quick@<t t-esc="member_name"/></code>
-              <h4>macOS</h4>
-              <p>Install <a href="https://apps.apple.com/app/wireguard/id1451685025" target="_blank" style="color:#7c3aed;">WireGuard</a> from the App Store &#x2192; <b>Import Tunnel(s) from File</b> &#x2192; select the downloaded .conf file &#x2192; <b>Activate</b>.</p>
-              <h4>Windows</h4>
-              <p>1. Download <a href="https://www.wireguard.com/install/" target="_blank" style="color:#7c3aed;">WireGuard for Windows</a>.<br/>
-              2. Open WireGuard &#x2192; <b>Import tunnel(s) from file</b> &#x2192; select the downloaded .conf file &#x2192; <b>Activate</b>.</p>
-              <h4>iPhone / iPad</h4>
-              <p>Install the <a href="https://apps.apple.com/app/wireguard/id1451685025" target="_blank" style="color:#7c3aed;">WireGuard</a> app from the App Store &#x2192; tap <b>+</b> &#x2192; <b>Create from file or archive</b> &#x2192; select the downloaded .conf file &#x2192; enable the tunnel.</p>
-            </t>
-            <t t-else="">
-              <h4>macOS</h4>
-              <p>Install the <a href="https://apps.apple.com/app/wireguard/id1451685025" target="_blank" style="color:#7c3aed;">WireGuard</a> app from the App Store, open it and choose <b>Import Tunnel(s) from File</b>, then select the downloaded .conf file.</p>
-              <h4>Linux</h4>
-              <p>Install and activate the VPN tunnel:</p>
-              <code>sudo apt-get install -y wireguard wireguard-tools
-sudo cp myserver.conf /etc/wireguard/
-sudo chmod 600 /etc/wireguard/myserver.conf
-sudo wg-quick up myserver
-sudo systemctl enable wg-quick@myserver</code>
-              <h4>Windows</h4>
-              <p>1. Download <a href="https://www.wireguard.com/install/" target="_blank" style="color:#7c3aed;">WireGuard for Windows</a>.<br/>
-              2. Open WireGuard &#x2192; <b>Import tunnel(s) from file</b> &#x2192; select the downloaded .conf file &#x2192; <b>Activate</b>.</p>
-            </t>
-          </div>
         </div>
+        <div class="card guide" id="guide">
+          <h3>
+            <span lang="de">Installationsanleitung</span>
+            <span lang="en">Installation guide</span>
+          </h3>
+          <t>
+            <!-- ============ Script with key generated on the client: Linux and macOS ============ -->
+            <t t-if="is_script and is_client_key_script">
+              <p class="intro" data-mode="script_client_key">
+                <span lang="de">Sie bekommen ein <b>Install-Script</b> (<code t-esc="file_name"/>). Es erzeugt den WireGuard-Schlüssel <b>auf Ihrem Gerät</b>, meldet ihn am Server an und startet den Tunnel. Das Script läuft unter Linux und macOS.</span>
+                <span lang="en">You get an <b>install script</b> (<code t-esc="file_name"/>). It creates the WireGuard key <b>on your device</b>, registers it with the server and starts the tunnel. The script runs on Linux and macOS.</span>
+              </p>
+              <details class="device" data-device="linux">
+                <summary>Linux</summary>
+                <ol class="steps">
+                  <li>
+                    <span lang="de">Laden Sie das Script oben herunter (oder kopieren Sie es auf den Rechner). Führen Sie es als root aus:</span>
+                    <span lang="en">Download the script above (or copy it to the machine). Run it as root:</span>
+                    <pre>sudo bash <t t-esc="file_name"/></pre>
+                    <span lang="de">Am Ende steht „WireGuard '<t t-esc="iface"/>' installed“.</span>
+                    <span lang="en">At the end it prints “WireGuard '<t t-esc="iface"/>' installed”.</span>
+                    <img t-if="'linux_script_client.png' in guide_images" class="shot" t-attf-src="#{img}linux_script_client.png" loading="lazy" alt="sudo bash"/>
+                  </li>
+                  <t t-call="ovpn_manager.vpn_guide_check_terminal"/>
+                </ol>
+              </details>
+              <details class="device" data-device="mac">
+                <summary>macOS</summary>
+                <ol class="steps">
+                  <li>
+                    <span lang="de">Öffnen Sie das Terminal (Programme → Dienstprogramme → Terminal). Prüfen Sie, ob Homebrew installiert ist. Fehlt es, installieren Sie es wie auf <a href="https://brew.sh" target="_blank">brew.sh</a> beschrieben.</span>
+                    <span lang="en">Open Terminal (Applications → Utilities → Terminal). Check that Homebrew is installed. If it is missing, install it as described on <a href="https://brew.sh" target="_blank">brew.sh</a>.</span>
+                    <pre>brew --version</pre>
+                    <img t-if="'macos_term_1_brew.png' in guide_images" class="shot" t-attf-src="#{img}macos_term_1_brew.png" loading="lazy" alt="brew --version"/>
+                  </li>
+                  <li>
+                    <span lang="de">Führen Sie das Script <b>ohne sudo</b> aus. Es fragt selbst nach Ihrem Mac-Passwort.</span>
+                    <span lang="en">Run the script <b>without sudo</b>. It asks for your Mac password itself.</span>
+                    <pre>bash ~/Downloads/<t t-esc="file_name"/></pre>
+                    <img t-if="'macos_term_2_run.png' in guide_images" class="shot" t-attf-src="#{img}macos_term_2_run.png" loading="lazy" alt="bash"/>
+                  </li>
+                  <t t-call="ovpn_manager.vpn_guide_check_terminal"/>
+                </ol>
+              </details>
+              <div class="hint">
+                <span lang="de">Windows, iPhone und iPad werden von diesem Script nicht unterstützt. Dafür brauchen Sie eine fertige .conf-Datei. Bitten Sie Ihren Administrator, die Auslieferungsart umzustellen.</span>
+                <span lang="en">Windows, iPhone and iPad are not supported by this script. They need a ready-made .conf file. Ask your administrator to change the delivery mode.</span>
+              </div>
+            </t>
+            <!-- ============ Script with key from the server: Linux only ============ -->
+            <t t-elif="is_script">
+              <p class="intro" data-mode="script_server_key">
+                <span lang="de">Sie bekommen ein <b>Install-Script</b> (<code t-esc="file_name"/>). Es installiert WireGuard und startet den Tunnel. Das Script läuft nur unter Linux (Debian/Ubuntu).</span>
+                <span lang="en">You get an <b>install script</b> (<code t-esc="file_name"/>). It installs WireGuard and starts the tunnel. The script only runs on Linux (Debian/Ubuntu).</span>
+              </p>
+              <details class="device" data-device="linux">
+                <summary>Linux</summary>
+                <ol class="steps">
+                  <li>
+                    <span lang="de">Laden Sie das Script oben herunter (oder kopieren Sie es auf den Rechner). Führen Sie es als root aus:</span>
+                    <span lang="en">Download the script above (or copy it to the machine). Run it as root:</span>
+                    <pre>sudo bash <t t-esc="file_name"/></pre>
+                    <span lang="de">Am Ende steht „WireGuard '<t t-esc="iface"/>' installed“.</span>
+                    <span lang="en">At the end it prints “WireGuard '<t t-esc="iface"/>' installed”.</span>
+                    <img t-if="'linux_script_server.png' in guide_images" class="shot" t-attf-src="#{img}linux_script_server.png" loading="lazy" alt="sudo bash"/>
+                  </li>
+                  <t t-call="ovpn_manager.vpn_guide_check_terminal"/>
+                </ol>
+              </details>
+              <div class="hint">
+                <span lang="de">macOS, Windows, iPhone und iPad werden von diesem Script nicht unterstützt. Dafür brauchen Sie eine fertige .conf-Datei. Bitten Sie Ihren Administrator, die Auslieferungsart umzustellen.</span>
+                <span lang="en">macOS, Windows, iPhone and iPad are not supported by this script. They need a ready-made .conf file. Ask your administrator to change the delivery mode.</span>
+              </div>
+            </t>
+            <!-- ============ Ready-made .conf: all devices ============ -->
+            <t t-else="">
+              <p class="intro" data-mode="full_conf">
+                <span lang="de">Sie bekommen eine fertige Konfigurationsdatei (<code t-esc="conf_name"/>). Wählen Sie Ihr Gerät.</span>
+                <span lang="en">You get a ready-made configuration file (<code t-esc="conf_name"/>). Choose your device.</span>
+              </p>
+              <details class="device" data-device="mac">
+                <summary>macOS</summary>
+                <ol class="steps">
+                  <li>
+                    <span lang="de">Installieren Sie die App <a href="https://apps.apple.com/app/wireguard/id1451685025" target="_blank">WireGuard</a> aus dem Mac App Store.</span>
+                    <span lang="en">Install the <a href="https://apps.apple.com/app/wireguard/id1451685025" target="_blank">WireGuard</a> app from the Mac App Store.</span>
+                    <img t-if="'macos_1_install.png' in guide_images" class="shot" t-attf-src="#{img}macos_1_install.png" loading="lazy" alt="App Store"/>
+                  </li>
+                  <li>
+                    <span lang="de">Öffnen Sie WireGuard. Klicken Sie auf <b>Tunnel aus Datei importieren</b> und wählen Sie <code t-esc="conf_name"/> (meist im Ordner Downloads).</span>
+                    <span lang="en">Open WireGuard. Click <b>Import Tunnel(s) from File</b> and select <code t-esc="conf_name"/> (usually in the Downloads folder).</span>
+                    <img t-if="'macos_2_import.png' in guide_images" class="shot" t-attf-src="#{img}macos_2_import.png" loading="lazy" alt="Import"/>
+                  </li>
+                  <li>
+                    <span lang="de">Beim ersten Tunnel fragt macOS, ob WireGuard VPN-Konfigurationen hinzufügen darf. Klicken Sie auf <b>Erlauben</b>.</span>
+                    <span lang="en">For the first tunnel macOS asks whether WireGuard may add VPN configurations. Click <b>Allow</b>.</span>
+                    <img t-if="'macos_3_allow.png' in guide_images" class="shot" t-attf-src="#{img}macos_3_allow.png" loading="lazy" alt="Allow"/>
+                  </li>
+                  <li>
+                    <span lang="de">Wählen Sie den Tunnel <b t-esc="member_name"/> in der Liste und klicken Sie auf <b>Aktiviere</b>.</span>
+                    <span lang="en">Select the tunnel <b t-esc="member_name"/> in the list and click <b>Activate</b>.</span>
+                    <img t-if="'macos_4_activate.png' in guide_images" class="shot" t-attf-src="#{img}macos_4_activate.png" loading="lazy" alt="Activate"/>
+                  </li>
+                  <li class="check">
+                    <b>
+                      <span lang="de">Verbindung prüfen:</span>
+                      <span lang="en">Check the connection:</span>
+                    </b>
+                    <span lang="de">Der Status steht auf <b>Aktiv</b>. Beim Peer steht <b>Letzter Handshake: vor … Sekunden</b>. Fehlt der Handshake, ist der Tunnel nicht verbunden.</span>
+                    <span lang="en">The status is <b>Active</b>. The peer shows <b>Latest handshake: … seconds ago</b>. Without a handshake the tunnel is not connected.</span>
+                    <img t-if="'macos_5_check.png' in guide_images" class="shot" t-attf-src="#{img}macos_5_check.png" loading="lazy" alt="Status"/>
+                  </li>
+                </ol>
+              </details>
+              <details class="device" data-device="win">
+                <summary>Windows</summary>
+                <ol class="steps">
+                  <li>
+                    <span lang="de">Laden Sie <a href="https://www.wireguard.com/install/" target="_blank">WireGuard für Windows</a> herunter und installieren Sie es.</span>
+                    <span lang="en">Download <a href="https://www.wireguard.com/install/" target="_blank">WireGuard for Windows</a> and install it.</span>
+                    <img t-if="'win_1_install.png' in guide_images" class="shot" t-attf-src="#{img}win_1_install.png" loading="lazy" alt="Installer"/>
+                  </li>
+                  <li>
+                    <span lang="de">Öffnen Sie WireGuard. Klicken Sie auf <b>Tunnel aus Datei importieren</b> und wählen Sie <code t-esc="conf_name"/>.</span>
+                    <span lang="en">Open WireGuard. Click <b>Import tunnel(s) from file</b> and select <code t-esc="conf_name"/>.</span>
+                    <img t-if="'win_2_import.png' in guide_images" class="shot" t-attf-src="#{img}win_2_import.png" loading="lazy" alt="Import"/>
+                  </li>
+                  <li>
+                    <span lang="de">Wählen Sie den Tunnel <b t-esc="member_name"/> und klicken Sie auf <b>Aktivieren</b>.</span>
+                    <span lang="en">Select the tunnel <b t-esc="member_name"/> and click <b>Activate</b>.</span>
+                    <img t-if="'win_3_activate.png' in guide_images" class="shot" t-attf-src="#{img}win_3_activate.png" loading="lazy" alt="Activate"/>
+                  </li>
+                  <li class="check">
+                    <b>
+                      <span lang="de">Verbindung prüfen:</span>
+                      <span lang="en">Check the connection:</span>
+                    </b>
+                    <span lang="de">Der Status steht auf <b>Aktiv</b>. Beim Peer steht <b>Letzter Handshake</b> mit einer Zeit von wenigen Sekunden. Zusätzlich in der Eingabeaufforderung:</span>
+                    <span lang="en">The status is <b>Active</b>. The peer shows <b>Latest handshake</b> a few seconds ago. Also in the command prompt:</span>
+                    <pre>ping <t t-esc="server_ip"/></pre>
+                    <img t-if="'win_4_check.png' in guide_images" class="shot" t-attf-src="#{img}win_4_check.png" loading="lazy" alt="Status"/>
+                  </li>
+                </ol>
+              </details>
+              <details class="device" data-device="ios">
+                <summary>iPhone / iPad</summary>
+                <ol class="steps">
+                  <li>
+                    <span lang="de">Installieren Sie die App <a href="https://apps.apple.com/app/wireguard/id1441195209" target="_blank">WireGuard</a> aus dem App Store.</span>
+                    <span lang="en">Install the <a href="https://apps.apple.com/app/wireguard/id1441195209" target="_blank">WireGuard</a> app from the App Store.</span>
+                    <img t-if="'ios_1_install.png' in guide_images" class="shot phone" t-attf-src="#{img}ios_1_install.png" loading="lazy" alt="App Store"/>
+                  </li>
+                  <li>
+                    <span lang="de">Öffnen Sie diese Seite in Safari auf dem iPhone/iPad und laden Sie die .conf-Datei oben herunter. Tippen Sie dann in WireGuard auf <b>+</b> und auf <b>Aus Datei oder Archiv erstellen</b>.</span>
+                    <span lang="en">Open this page in Safari on the iPhone/iPad and download the .conf file above. Then tap <b>+</b> in WireGuard and <b>Create from file or archive</b>.</span>
+                    <img t-if="'ios_2_add.png' in guide_images" class="shot phone" t-attf-src="#{img}ios_2_add.png" loading="lazy" alt="+"/>
+                  </li>
+                  <li>
+                    <span lang="de">Wählen Sie <code t-esc="conf_name"/> im Ordner <b>Downloads</b>.</span>
+                    <span lang="en">Select <code t-esc="conf_name"/> in the <b>Downloads</b> folder.</span>
+                    <img t-if="'ios_3_file.png' in guide_images" class="shot phone" t-attf-src="#{img}ios_3_file.png" loading="lazy" alt="Files"/>
+                  </li>
+                  <li>
+                    <span lang="de">Beim ersten Tunnel fragt iOS, ob WireGuard VPN-Konfigurationen hinzufügen darf. Tippen Sie auf <b>Erlauben</b>.</span>
+                    <span lang="en">For the first tunnel iOS asks whether WireGuard may add VPN configurations. Tap <b>Allow</b>.</span>
+                    <img t-if="'ios_4_allow.png' in guide_images" class="shot phone" t-attf-src="#{img}ios_4_allow.png" loading="lazy" alt="Allow"/>
+                  </li>
+                  <li>
+                    <span lang="de">Schalten Sie den Schalter neben <b t-esc="member_name"/> ein.</span>
+                    <span lang="en">Turn on the switch next to <b t-esc="member_name"/>.</span>
+                    <img t-if="'ios_5_activate.png' in guide_images" class="shot phone" t-attf-src="#{img}ios_5_activate.png" loading="lazy" alt="Switch"/>
+                  </li>
+                  <li class="check">
+                    <b>
+                      <span lang="de">Verbindung prüfen:</span>
+                      <span lang="en">Check the connection:</span>
+                    </b>
+                    <span lang="de">Tippen Sie auf den Tunnel. Der Status steht auf <b>Aktiv</b>, beim Peer steht <b>Letzter Handshake</b> mit einer Zeit von wenigen Sekunden.</span>
+                    <span lang="en">Tap the tunnel. The status is <b>Active</b> and the peer shows <b>Latest handshake</b> a few seconds ago.</span>
+                    <img t-if="'ios_6_check.png' in guide_images" class="shot phone" t-attf-src="#{img}ios_6_check.png" loading="lazy" alt="Status"/>
+                  </li>
+                </ol>
+              </details>
+              <details class="device" data-device="linux">
+                <summary>Linux</summary>
+                <ol class="steps">
+                  <li>
+                    <span lang="de">Installieren Sie WireGuard (Debian/Ubuntu):</span>
+                    <span lang="en">Install WireGuard (Debian/Ubuntu):</span>
+                    <pre>sudo apt-get install -y wireguard wireguard-tools</pre>
+                    <img t-if="'linux_conf_1_install.png' in guide_images" class="shot" t-attf-src="#{img}linux_conf_1_install.png" loading="lazy" alt="apt-get"/>
+                  </li>
+                  <li>
+                    <span lang="de">Legen Sie die Datei ab und starten Sie den Tunnel. Der Tunnel heißt danach <b t-esc="iface"/>.</span>
+                    <span lang="en">Put the file in place and start the tunnel. The tunnel is then called <b t-esc="iface"/>.</span>
+                    <pre>sudo install -m 600 <t t-esc="conf_name"/> /etc/wireguard/<t t-esc="iface"/>.conf
+sudo systemctl enable --now wg-quick@<t t-esc="iface"/></pre>
+                    <img t-if="'linux_conf_2_up.png' in guide_images" class="shot" t-attf-src="#{img}linux_conf_2_up.png" loading="lazy" alt="wg-quick"/>
+                  </li>
+                  <t t-call="ovpn_manager.vpn_guide_check_terminal"/>
+                </ol>
+              </details>
+            </t>
+          </t>
+          <!-- ============ TCP/443 via wstunnel ============ -->
+          <t t-if="show_tcp">
+            <details class="device" data-device="tcp">
+              <summary>TCP/443 (wstunnel)</summary>
+              <t t-if="is_client_key_script">
+                <ol class="steps">
+                  <li>
+                    <span lang="de">Laden Sie oben das <b>Install-Script für TCP/443</b> herunter und führen Sie es wie oben beschrieben aus. Es installiert zusätzlich den wstunnel-Client und startet ihn als Dienst.</span>
+                    <span lang="en">Download the <b>install script for TCP/443</b> above and run it as described above. It also installs the wstunnel client and starts it as a service.</span>
+                    <img t-if="'tcp_wstunnel.png' in guide_images" class="shot" t-attf-src="#{img}tcp_wstunnel.png" loading="lazy" alt="wstunnel"/>
+                  </li>
+                  <t t-call="ovpn_manager.vpn_guide_check_terminal"/>
+                </ol>
+              </t>
+              <t t-else="">
+                <ol class="steps">
+                  <li>
+                    <span lang="de">Installieren Sie den wstunnel-Client: macOS mit <code>brew install wstunnel</code>, Linux und Windows von <a href="https://github.com/erebe/wstunnel/releases" target="_blank">github.com/erebe/wstunnel</a>. Auf iPhone und iPad gibt es keinen wstunnel-Client.</span>
+                    <span lang="en">Install the wstunnel client: macOS with <code>brew install wstunnel</code>, Linux and Windows from <a href="https://github.com/erebe/wstunnel/releases" target="_blank">github.com/erebe/wstunnel</a>. There is no wstunnel client for iPhone and iPad.</span>
+                  </li>
+                  <li>
+                    <span lang="de">Starten Sie wstunnel in einem Terminal und lassen Sie es offen:</span>
+                    <span lang="en">Start wstunnel in a terminal and keep it open:</span>
+                    <pre t-esc="wstunnel_cmd"/>
+                    <img t-if="'tcp_wstunnel.png' in guide_images" class="shot" t-attf-src="#{img}tcp_wstunnel.png" loading="lazy" alt="wstunnel"/>
+                  </li>
+                  <li>
+                    <span lang="de">Laden Sie oben die <b>.conf-Datei für TCP/443</b> (<code t-esc="tcp_name"/>) herunter. Importieren und aktivieren Sie sie wie die normale .conf-Datei (Anleitung für Ihr Gerät oben).</span>
+                    <span lang="en">Download the <b>.conf file for TCP/443</b> (<code t-esc="tcp_name"/>) above. Import and activate it like the normal .conf file (guide for your device above).</span>
+                  </li>
+                  <li class="check">
+                    <b>
+                      <span lang="de">Verbindung prüfen:</span>
+                      <span lang="en">Check the connection:</span>
+                    </b>
+                    <span lang="de">wie beim normalen Tunnel: Handshake in der App bzw. <code>ping <t t-esc="server_ip"/></code>. Ohne laufendes wstunnel gibt es keinen Handshake.</span>
+                    <span lang="en">as for the normal tunnel: handshake in the app or <code>ping <t t-esc="server_ip"/></code>. Without a running wstunnel there is no handshake.</span>
+                  </li>
+                </ol>
+              </t>
+            </details>
+          </t>
+        </div>
+        <script>
+          (function () {
+            var root = document.documentElement;
+            function setLang(lang) {
+              root.setAttribute("data-ui", lang);
+              root.setAttribute("lang", lang);
+              try { localStorage.setItem("vpn_download_lang", lang); } catch (e) {}
+            }
+            try {
+              var saved = localStorage.getItem("vpn_download_lang");
+              if (saved === "de" || saved === "en") { setLang(saved); }
+            } catch (e) {}
+            document.querySelectorAll(".lang-switch button").forEach(function (b) {
+              b.addEventListener("click", function () { setLang(b.getAttribute("data-set")); });
+            });
+            // Open the guide of the device the page is viewed on.
+            var ua = navigator.userAgent, dev = null;
+            if (/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) &amp;&amp; navigator.maxTouchPoints &gt; 1)) { dev = "ios"; }
+            else if (/Windows/.test(ua)) { dev = "win"; }
+            else if (/Macintosh|Mac OS X/.test(ua)) { dev = "mac"; }
+            else if (/Linux/.test(ua) &amp;&amp; !/Android/.test(ua)) { dev = "linux"; }
+            var match = dev &amp;&amp; document.querySelector('details.device[data-device="' + dev + '"]');
+            var target = match || document.querySelector("details.device");
+            if (target) { target.open = true; }
+          })();
+        </script>
       </body>
     </html>
+  </template>
+  <!-- Last step of every terminal guide: handshake and ping over the tunnel. -->
+  <template id="vpn_guide_check_terminal" name="VPN Guide: check connection (terminal)">
+    <li class="check">
+      <b>
+        <span lang="de">Verbindung prüfen:</span>
+        <span lang="en">Check the connection:</span>
+      </b>
+      <span lang="de">Bei <b>latest handshake</b> steht eine Zeit von wenigen Sekunden. Der Server antwortet auf ping.</span>
+      <span lang="en"><b>latest handshake</b> shows a time of a few seconds. The server answers the ping.</span>
+      <pre>sudo wg show <t t-esc="iface"/>
+ping -c 3 <t t-esc="server_ip"/></pre>
+      <img t-if="'linux_check.png' in guide_images" class="shot" t-attf-src="#{img}linux_check.png" loading="lazy" alt="wg show"/>
+    </li>
   </template>
 </odoo>
