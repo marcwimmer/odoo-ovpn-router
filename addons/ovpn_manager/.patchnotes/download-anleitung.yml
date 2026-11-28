@@ -7,6 +7,7 @@ description: |
   prüfen“. Es erscheinen nur die Geräte, die zur Auslieferungsart des Members
   passen (Config-Datei, Skript mit Server- oder Client-Schlüssel, TCP/443 mit
   wstunnel). Statt „myserver.conf“ steht der echte Dateiname da. Oben rechts
-  schaltet man zwischen Deutsch und Englisch um.
+  schaltet man zwischen Deutsch und Englisch um. Fehlt zu einem Schritt noch der
+  Screenshot, steht dort nur der Text, ohne leeren Bildrahmen.
   Testen: je Auslieferungsart einen Member öffnen, den Download-Link aufrufen und
   prüfen, dass nur die passenden Geräte und Dateinamen erscheinen.
